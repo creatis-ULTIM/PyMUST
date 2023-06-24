@@ -184,7 +184,7 @@ def rf2iq(RF : np.ndarray, Fs : Union[float, utils.Param], Fc : float = None, B 
     #      IQ = IQ.T # end
 
     #%-- Display a warning message if harmful aliasing is suspected
-    if Fs<(2*Fc+B): #% the RF signal is undersampled
+    if B is not None and Fs<(2*Fc+B): #% the RF signal is undersampled
         fL = Fc-B/2; fH = Fc+B/2; #% lower and higher frequencies of the bandpass signal
         n = int(np.floor(fH/(fH-fL)))
         harmlessAliasing = np.any(2*fH/np.arange(n) <=Fs & Fs<=2*fL/np.arange(n))

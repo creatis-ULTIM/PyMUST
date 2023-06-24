@@ -699,7 +699,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         gamma = 1j*y**2/2/rm
         beta2 = (-(y/rm)**2).astype(np.complex128)
         #clear rm
-        Nmgbm = max(3,np.round(nSampling/20))
+        Nmgbm = max(3,int(np.round(nSampling/20)))
         k4mgbm = np.round(np.linspace(1,nSampling,Nmgbm))
         #% (the MGBM field won't be calculated at each step)
 
@@ -809,7 +809,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         else:  #% using PFIELD alone
             RP = RP + abs(RPk)**2; #% acoustic intensity
 
-            SPECT[k,:] = RPk
+            SPECT[k,:] = RPk.flatten()
         
         
         # USE TQDM INSTEAD

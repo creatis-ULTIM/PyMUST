@@ -121,6 +121,19 @@ def iq2doppler(IQ:np.ndarray, param: utils.Param, M: typing.Union[int,np.ndarray
     #%   Cambridge University Press, 1996
     return vel, variance
 
+def getNyquistVelocity(param, lag=  1):
+    if not utils. isfield(param,'c'):
+        param.c = 1540 # % longitudinal velocity in m/s
+
+    if utils.isfield(param,'PRF'):
+        PRF = param.PRF
+    elif utils.isfield(param,'PRP'):
+        PRF = 1./param.PRP
+    else:
+        raise ValueError('A pulse repetition frequency or period must be specified in the structure PARAM: PARAM.PRF or PARAM.PRP')
+
+    return  param.c*PRF/4/param.fc/lag
+
 
 
 

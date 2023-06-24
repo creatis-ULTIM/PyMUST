@@ -1,5 +1,5 @@
 from . import utils, pfield
-import logging
+import logging, copy
 import numpy as np 
 
 def simus(*varargin):
@@ -226,7 +226,7 @@ def simus(*varargin):
                 RC = varargin[2]
                 delaysTX = varargin[3]
                 param = varargin[4]
-                options = varargin[5]
+                options = copy.deepcopy(varargin[5])
             else: # % simus(X,Y,Z,RC,DELAYS,PARAM)
                 y = varargin[1]
                 z = varargin[2]
@@ -240,7 +240,7 @@ def simus(*varargin):
                 RC = varargin[3]
                 delaysTX = varargin[4]
                 param = varargin[5]
-                options = varargin[6]
+                options = copy.deepcopy(varargin[6])
     assert isinstance(param, utils.Param),'PARAM must be a structure.'
 
     #%-- Elevation focusing and X,Y,Z size

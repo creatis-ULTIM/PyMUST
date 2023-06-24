@@ -1,4 +1,5 @@
 import numpy as np
+from . import utils
 def bmode(IQ : np.ndarray, DR: float= 40):
 
     """
@@ -49,9 +50,9 @@ def bmode(IQ : np.ndarray, DR: float= 40):
     %   website: <a
     %   href="matlab:web('https://www.biomecardio.com')">www.BiomeCardio.com</a>
     """
-    assert(isinstance(IQ, np.ndarray) and not IQ.dtype,'IQ must be a complex array')
+    assert utils.iscomplex(IQ),'IQ must be a complex array'
 
-    assert(DR>0,'The dynamic range DR (in dB) must be >0')
+    assert DR>0,'The dynamic range DR (in dB) must be >0'
 
 
     I = np.abs(IQ) # real envelope

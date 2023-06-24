@@ -9,5 +9,6 @@ setup(name='pymust',
       author_email='gabriel.bernardino1@gmail.com',
       url='https://www.biomecardio.com/en//',
       packages=['pymust'],
+      install_requires=['numpy', 'matplotlib', 'scipy'],
       package_dir={'':'src'}
      )

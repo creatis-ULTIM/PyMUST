@@ -78,7 +78,7 @@ def isnumeric(x):
     return isinstance(x, np.ndarray) or isinstance(x, int) or isinstance(x, float) or isinstance(x, np.number)
 
 def iscomplex(x):
-    return (isinstance(x, np.ndarray) and x.dtype in [np.complex64, np.complex128]) or isinstance(x, complex)
+    return (isinstance(x, np.ndarray) and np.iscomplexobj(x)) or isinstance(x, complex)
 
 def islogical(v):
     return isinstance(v, bool)

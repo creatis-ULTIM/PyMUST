@@ -456,8 +456,8 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
         #% Note: in Matlab, sinc(x) = sin(pi*x)/(pi*x)
         f = lambda th,width= ElementWidth,l= lambdaMIN: np.abs(np.cos(th+RXa)*np.sinc(width/l*np.sin(th+RXa))-0.71)
 
-        x = scipy.optimize.fminbound(f,0,np.pi/2-RXa,tolx= np.pi/100)
-        alpha = x.xopt
+        x = scipy.optimize.fminbound(f,0,np.pi/2-RXa,xtol= np.pi/100)
+        alpha = x
         param.fnumber = 1/2/np.tan(alpha)
 
     fNum = param.fnumber
