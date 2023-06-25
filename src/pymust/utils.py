@@ -1,6 +1,6 @@
 import numpy as np, scipy, scipy.interpolate
 from abc import ABC
-import inspect, matplotlib, pickle, os 
+import inspect, matplotlib, pickle, os, matplotlib.pyplot as plt
 
 class dotdict(dict, ABC):
     """Copied from https://stackoverflow.com/questions/2352181/how-to-use-a-dot-to-access-members-of-dictionary"""
@@ -46,6 +46,9 @@ class Param(dotdict):
         return {n.lower(): n for n in names}
     
     def getElementPositions(self):
+        """
+        Returns the position of each piezoelectrical element in the probe.
+        """
         RadiusOfCurvature = self.radius
         NumberOfElements = self.Nelements
 
@@ -66,6 +69,7 @@ class Param(dotdict):
             xe = RadiusOfCurvature*np.sin(THe)
             ze = ze-h
         return xe.reshape((1,-1)), ze.reshape((1,-1)), THe.reshape((1,-1)), h.reshape((1,-1))
+    
 # To maintain same notation as matlab
 def interp1(y, xNew, kind):
     if kind == 'spline':
@@ -139,6 +143,15 @@ def fresnelint(x):
     f = np.reshape(c, siz0) + 1j * np.reshape(s, siz0)
     return f
 
+
+# Plotting
+def polarplot(x, z, v, cmap = 'gray'):
+    plt.pcolormesh(x, z, v, cmap = cmap)
+    plt.axis('equal')
+    ax = plt.gca()
+    ax.set_facecolor('black')
+
+
 def getDopplerColorMap():
     source_file_path = inspect.getfile(inspect.currentframe())
     with open( os.path.join(os.path.dirname(source_file_path), 'Data/colorMap.pkl'), 'rb') as f:
@@ -146,3 +159,6 @@ def getDopplerColorMap():
     new_cmap = matplotlib.colors.LinearSegmentedColormap('doppler', dMap)
     dopplerCM = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(),cmap=new_cmap)
     return dopplerCM
+
+def applyDasMTX(M, IQ, imageShape):
+    return (M @ IQ.flatten(order = 'F')).reshape(imageShape, order = 'F')

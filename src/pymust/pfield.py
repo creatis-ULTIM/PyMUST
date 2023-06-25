@@ -335,6 +335,8 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     if  'TXapodization' not in param:
         param.TXapodization = np.ones((1,NumberOfElements))
     else:
+        if isinstance(param.TXapodization, np.ndarray) and len(param.TXapodization.shape) == 1:
+            param.TXapodization = param.TXapodization.reshape((1, -1))
         assert (len(param.TXapodization.shape) == 2 and param.TXapodization.shape[0] == 1) and utils.isnumeric(param.TXapodization), 'PARAM.TXapodization must be a vector'
         assert param.TXapodization.shape[1]==NumberOfElements, 'PARAM.TXapodization must be of length = (number of elements)'
 

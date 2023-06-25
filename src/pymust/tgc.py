@@ -62,7 +62,7 @@ def rlinfit(x,y,p):
     n = int(np.round(N*p/100))
     I = I[:n]
     x = x[I]
-    y = y(I)
+    y = y[I]
 
     #Not sure it is the best option, what about some regression with regularisation?
     if True:

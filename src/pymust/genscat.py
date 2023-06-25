@@ -1,5 +1,7 @@
-import numpy as np, scipy, scipy.interpolate
+import scipy, scipy.interpolate
 from . import utils
+import numpy as np
+
 def genscat(roidim,meandist,I = None,g = None):
     """
     %GENSCAT   Generate a distribution of scatterers
@@ -81,8 +83,7 @@ def genscat(roidim,meandist,I = None,g = None):
 
     #%-- Check the input arguments
     assert utils.isnumeric(roidim) and isinstance(roidim, np.ndarray), 'The 1st argument must be a numeric vector.'
-    assert( len(roidim)==2 or len(roidim)==3,
-        'The 1st argument must be a vector of length 2 or 3.')
+    assert len(roidim)==2 or len(roidim)==3, 'The 1st argument must be a vector of length 2 or 3.'
     if isinstance(meandist, utils.Param):
         #%-- The input is PARAM
         #% Check the PARAM structure and calculate the default MEANDIST
@@ -106,7 +107,7 @@ def genscat(roidim,meandist,I = None,g = None):
         #%--
         meandist = param.c/(param.fc*(1+param.bandwidth/200))
     else:
-        assert np.isinstance(meandist, float) and meandist>0, 'MEANDIST must be a positive scalar.'
+        assert isinstance(meandist, float) and meandist>0, 'MEANDIST must be a positive scalar.'
     
     if I is not None:
         assert len(I.shape) in [2, 3] and np.all(I>=0), 'I must be 2-D or 3-D with non-negative elements.'
@@ -167,7 +168,7 @@ def genscat(roidim,meandist,I = None,g = None):
         xs = xs[idx]
         zs = zs[idx]
         
-        ys = np.zeros[xs.shape]
+        ys = np.zeros(xs.shape)
 
     else: #% 3-D
         #%-- 3-D pseudorandom distribution --
@@ -215,18 +216,18 @@ def genscat(roidim,meandist,I = None,g = None):
             nl,nc = I.shape
             dxi = (xmax-xmin)/nc
             dzi = (zmax-zmin)/nl
-            xi,zi = np.meshgrid(np.linspace(xmin+dxi/2,xmax-dxi/2,nc), np.linspace(zmin+dzi/2,zmax-dzi/2,nl))
+            xi,zi = np.linspace(xmin-dxi/2,xmax-dxi/2,nc), np.linspace(zmin+dzi/2,zmax-dzi/2,nl)
             
         elif  len(roidim)==3:
             #%-- 3-D image grid    
             assert len(I.shape)==3, 'Number of dimensions of I is not consistent with the first input vector.'
-            nl,nc,np = I.shape
+            nl,nc,nr = I.shape
             dxi = (xmax-xmin)/nc
-            dyi = (ymax-ymin)/np
+            dyi = (ymax-ymin)/nr
             dzi = (zmax-zmin)/nl
-            xi,zi,yi = np.meshgrid(np.linspace(xmin+dxi/2,xmax-dxi/2,nc),
-                np.linspace(zmin+dzi/2,zmax-dzi/2,nl),
-                np.linspace(ymin+dyi/2,ymax-dyi/2,np))
+            xi,zi,yi = np.linspace(xmin+dxi/2,xmax-dxi/2,nc), \
+                np.linspace(zmin+dzi/2,zmax-dzi/2,nl), \
+                np.linspace(ymin+dyi/2,ymax-dyi/2,np)
         else:
             raise ValueError('Incorrect roidim size')
 
@@ -236,10 +237,10 @@ def genscat(roidim,meandist,I = None,g = None):
             g = 40  #% default value for log compression
         
         if len(roidim)==2:
-            interp =  scipy.interpolate.RegularGridInterpolator(np.stack([xi,zi], axis = -1), method = 'linear', fill_value=0)
+            interp =  scipy.interpolate.RegularGridInterpolator([xi,zi], I, method = 'linear', fill_value=0, bounds_error = False)
             RC = interp(np.stack([xs,zs], axis = -1))
         elif len(roidim)==3:
-            interp =  scipy.interpolate.RegularGridInterpolator(np.stack([xi, yi, zi], axis = -1), method = 'linear', fill_value=0)
+            interp =  scipy.interpolate.RegularGridInterpolator([xi, yi, zi], I, method = 'linear', fill_value=0, bounds_error = False)
             RC = interp(np.stack([xs,ys,zs], axis = -1))
         
         if g>1:
