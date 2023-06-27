@@ -1,2 +1,4 @@
 *.pyc
 src/pymust.egg-info/*
+.DS_Store
+*/.DS_Store
