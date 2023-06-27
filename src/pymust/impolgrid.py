@@ -79,6 +79,7 @@ def impolgrid(siz : typing.Union[int, np.ndarray, list ], zmax : float, width:fl
         param = width
         noWidth = True
 
+
     assert isinstance(siz, int) or len(siz)==1 or len(siz)==2,'SIZ must be [M,N] or M.'
     if isinstance(siz, int):
         siz = np.array([siz, siz])
@@ -109,7 +110,7 @@ def impolgrid(siz : typing.Union[int, np.ndarray, list ], zmax : float, width:fl
     R = param.radius
     isLINEAR = np.isinf(R)
 
-    if not isLINEAR and noWidth:
+    if not isLINEAR and not noWidth:
             logging.warning('MUST:impolgrid', 'The parameter WIDTH is ignored with a convex array.')
 
     #%-- Origo (x0,z0)

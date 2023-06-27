@@ -1,6 +1,6 @@
 import numpy as np, scipy, scipy.interpolate
 from abc import ABC
-import inspect, matplotlib, pickle, os, matplotlib.pyplot as plt
+import inspect, matplotlib, pickle, os, matplotlib.pyplot as plt, copy
 
 class dotdict(dict, ABC):
     """Copied from https://stackoverflow.com/questions/2352181/how-to-use-a-dot-to-access-members-of-dictionary"""
@@ -24,9 +24,8 @@ class dotdict(dict, ABC):
         for k in todelete:
             del self[k]
         return self
-    def copy(dict):
-        # Not implemented, make sure it works with subclasses
-        raise NotImplemented()
+    def copy(self):
+        return copy.deepcopy(self)
     
 class Options(dotdict):
     @property 
@@ -61,10 +60,10 @@ class Param(dotdict):
         else:
             #% Convex array
             chord = 2*RadiusOfCurvature*np.sin(np.arcsin(self.pitch/2/RadiusOfCurvature)*(NumberOfElements-1))
-            h = np.sqrt(RadiusOfCurvature^2-chord^2/4); #% apothem
+            h = np.sqrt(RadiusOfCurvature**2-chord**2/4); #% apothem
             #% https://en.wikipedia.org/wiki/Circular_segment
             #% THe = angle of the normal to element #e with respect to the z-axis
-            THe = np.linspace(np.arctan2(-chord/2,h),np.arcatan2(chord/2,h),NumberOfElements)
+            THe = np.linspace(np.arctan2(-chord/2,h),np.arctan2(chord/2,h),NumberOfElements)
             ze = RadiusOfCurvature*np.cos(THe)
             xe = RadiusOfCurvature*np.sin(THe)
             ze = ze-h
@@ -145,11 +144,11 @@ def fresnelint(x):
 
 
 # Plotting
-def polarplot(x, z, v, cmap = 'gray'):
+def polarplot(x, z, v, cmap = 'gray',background = 'black'):
     plt.pcolormesh(x, z, v, cmap = cmap)
     plt.axis('equal')
     ax = plt.gca()
-    ax.set_facecolor('black')
+    ax.set_facecolor(background)
 
 
 def getDopplerColorMap():

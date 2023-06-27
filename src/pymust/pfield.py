@@ -208,7 +208,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         assert x.shape == y.shape and y.shape == z.shape, 'X, Y, and Z must be of same size.'
 
     #
-    assert len(delaysTX.shape) == 2 and delaysTX.shape[0] == 1., 'GB: DELAYS must be a single row array.'
+    #assert len(delaysTX.shape) == 2., 'G. Bernardino: DELAYS must be a single row array. Multiline transmit still not  implemented in Python.'
     
     #Check the transmit delays
     assert utils.isnumeric(delaysTX) and all(delaysTX[~np.isnan(delaysTX)]>=0),  'DELAYS must be a nonnegative array.'
@@ -342,7 +342,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
 
     #% apodization is 0 where TX delays are NaN:
     idx = np.isnan(delaysTX)
-    param.TXapodization[idx]= 0
+    param.TXapodization[0, np.any(idx, axis = 0)]= 0
     delaysTX[idx] = 0
 
     # 12) TX pulse: Number of wavelengths
@@ -480,7 +480,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #% Null pressure will be assigned to out-of-field points.
     isOUT = z<0
     if np.isfinite(RadiusOfCurvature):
-        isOUT = isOUT or (x**2+(z+h)**2) <=RadiusOfCurvature**2
+        isOUT = np.logical_or(isOUT, (x**2+(z+h)**2) <=RadiusOfCurvature**2)
     
     #%-- Variables that we need:
     #%
@@ -732,7 +732,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
             else:
                 for n,_ in enumerate(A):
                     tmp = 1/(kw*alpha + B[n]/ElementHeight**2)
-                    MGBM = MGBM + A(n)*np.sqrt(np.pi*tmp)* np.exp(kw**2*beta2/4*tmp + kw*gamma)
+                    MGBM = MGBM + A[n]*np.sqrt(np.pi*tmp)* np.exp(kw**2*beta2/4*tmp + kw*gamma)
                 
             
         
