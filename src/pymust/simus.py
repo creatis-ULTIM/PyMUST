@@ -305,7 +305,7 @@ def simus(*varargin):
 
     #%-- Receive delays (in s)
     if not utils.isfield(param,'RXdelay'):
-        param.RXdelay = np.zeros((1,NumberOfElements))
+        param.RXdelay = np.zeros((1,NumberOfElements), dtype = np.float32)
     else:
         assert  isinstance(param.RXdelay, np.ndarray) and utils.isnumeric(param.RXdelay), 'PARAM.RXdelay must be a vector'
         assert param.RXdelay.shape[1] ==NumberOfElements, 'PARAM.RXdelay must be of length = (number of elements)'
@@ -355,7 +355,7 @@ def simus(*varargin):
     Nf = 2*int(np.ceil(param.fc/df))+1 # % number of frequency samples
 
     #%-- Run PFIELD to calculate the RF spectra
-    RFspectrum = np.zeros((Nf,NumberOfElements), dtype = np.complex128)# % will contain the RF spectra
+    RFspectrum = np.zeros((Nf,NumberOfElements), dtype = np.complex64)# % will contain the RF spectra
     options.FrequencyStep = df
 
     #%- run PFIELD in a parallel pool (NW workers)

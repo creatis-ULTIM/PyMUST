@@ -210,7 +210,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     if y is None or len(y) == 0:
         ElevationFocusing = False
         assert np.array_equal(x.shape, z.shape), 'X and Z must be of same size.'
-        y = np.zeros(x.shape)
+        y = np.zeros(x.shape, dtype = np.float32)
     else:
         ElevationFocusing = True
         assert x.shape == y.shape and y.shape == z.shape, 'X, Y, and Z must be of same size.'
@@ -237,7 +237,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #delaysTX  should be a row vector
     if len(delaysTX.shape) == 1:
         delaysTX = delaysTX.reshape((1, -1))
-
+    delaysTX = delaysTX.astype(np.float32)
     # Check if PFIELD is called by SIMUS or MKMOVIE
     isSIMUS = False
     isMKMOVIE = False
@@ -334,7 +334,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
 
     #%-- 11) Transmit apodization (no unit)
     if  'TXapodization' not in param:
-        param.TXapodization = np.ones((1,NumberOfElements))
+        param.TXapodization = np.ones((1,NumberOfElements), dtype = np.float32)
     else:
         if isinstance(param.TXapodization, np.ndarray) and len(param.TXapodization.shape) == 1:
             param.TXapodization = param.TXapodization.reshape((1, -1))
@@ -609,10 +609,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     RP = 0 # % RP = Radiation Pattern
     if isSIMUS:
         #%- For SIMUS only (we need the full spectrum of RX signals):
-        SPECT = np.zeros((nSampling, NumberOfElements), dtype = np.complex128)
+        SPECT = np.zeros((nSampling, NumberOfElements), dtype = np.complex64)
     elif isMKMOVIE:
         #%- For MKMOVIE only (we need the full spectrum of the pressure field):
-        SPECT = np.zeros((nSampling, nx), dtype = np.complex128)
+        SPECT = np.zeros((nSampling, nx), dtype = np.complex65)
     #elseif nargout==3
     #    SPECT = zeros([nSampling nx],'like',single(1i));
     #end
@@ -626,7 +626,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         else: # % param.baffle is a scalar
             ObliFac = np.cos(Th)/(np.cos(Th)+param.baffle)
     else: # % 1 if rigid baffle
-        ObliFac = np.ones(Th.shape)
+        ObliFac = np.ones(Th.shape, np.float32)
 
     ObliFac[np.abs(Th)>=np.pi/2] = utils.eps('single')
 
@@ -644,11 +644,11 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     kw = 2*np.pi*f[0]/c # % wavenumber
     kwa = alpha_dB/8.69*f[0]/1e6*1e2 # % attenuation-based wavenumber
 
-    EXP = np.exp(-kwa*r + 1j*np.mod(kw*r,2*np.pi)) #; % faster than exp(-kwa*r+1j*kw*r)
+    EXP = np.exp(-kwa*r + 1j*np.mod(kw*r,2*np.pi)).astype(np.complex64) #; % faster than exp(-kwa*r+1j*kw*r)
     #%-- Exponential array for the increment wavenumber dk
     dkw = 2*np.pi*df/c
     dkwa = alpha_dB/8.69*df/1e6*1e2
-    EXPdf = np.exp((-dkwa + 1j*dkw)*r)
+    EXPdf = np.exp((-dkwa + 1j*dkw)*r).astype(np.complex64)
 
     #%-- We replace EXP by EXP.*ObliFac./r or EXP.*ObliFac./sqrt(r)
     if ElevationFocusing:
@@ -656,6 +656,9 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         rm = np.mean(r,2); 
     else:
         EXP = EXP*ObliFac/np.sqrt(r)
+
+    if options.RC is not None:
+        options.RC = options.RC.astype(np.float32)
     #clear ObliFac r
 
     #%-- TX apodization
@@ -712,10 +715,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #% SUMMATION OVER THE SPECTRUM %
     #%-----------------------------%
     if isSIMUS:
-        SPECT = np.zeros((nSampling, NumberOfElements),dtype=np.complex128)
+        SPECT = np.zeros((nSampling, NumberOfElements),dtype=np.complex64)
     else:
-        SPECT = np.zeros((nSampling,nx),dtype=np.complex128)
-
+        SPECT = np.zeros((nSampling,nx),dtype=np.complex64)
+    EXP = EXP.astype(np.complex64)
     for k  in range(nSampling):
 
         kw = 2*np.pi*f[k]/c #; % wavenumber
@@ -743,7 +746,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         #%                     and with kwa = alpha_dB/8.7*f(k)/1e6*1e2;
         #% Since f(k) = f(1)+(k-1)df, we use the following recursive product:
         if k>0:
-            EXP = EXP*EXPdf
+            EXP = EXP* EXPdf
             #% If PFIELD is called by MKMOVIE and if scatterers are present:
             if isMKMOVIE and options.RC is None:
                 EXP_RC = EXP_RC*EXPdf_RC
@@ -786,10 +789,14 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         #%-- Transmit delays + Transmit apodization
         #% use of SUM: summation over the number of delay series (e.g. MLT)
         #WARNING,  HERE delays are a row vector instead of a column as in matlab
+
         DELAPOD = np.sum(np.exp(1j*kw*c*delaysTX), 0) *APOD
         
         #%-- Summing the radiation patterns generating by all the elements
         RPk = RPmono@DELAPOD.reshape((-1, 1))
+        #RPk = np.einsum('ij,j->i', RPmono, DELAPOD)
+        #RPk = RPk.reshape((-1,1))
+
         #%- include spectrum responses:
         RPk = pulseSPECT[k]*probeSPECT[k]*RPk
         #TODO understand

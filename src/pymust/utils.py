@@ -29,7 +29,7 @@ class dotdict(dict, ABC):
         return copy.deepcopy(self)
     
 class Options(dotdict):
-    default_Number_Workers = 4
+    default_Number_Workers = multiprocessing.cpu_count()
     @property 
     def names(self):
         names = {'dBThresh','ElementSplitting',
