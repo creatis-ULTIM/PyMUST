@@ -186,6 +186,14 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
 #   3) The paper that describes the theory of the full (2-D + 3-D) version
 #      of PFIELD is under review.
 #
+
+    if x is None or (isinstance(x, list) and len(x) == 0):
+        x =  np.array([])
+    if y is None or (isinstance(y, list) and len(y) == 0):
+        y =  np.array([])
+    if z is None or (isinstance(z, list) and len(z) == 0):
+        z =  np.array([])
+
     if options is None:
         if isinstance(isQuick, utils.Options):
             options = isQuick
@@ -199,9 +207,9 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         options.FullFrequencyDirectivity = False
         options.FrequencyStep = 1.5
 
-    if y is None:
+    if y is None or len(y) == 0:
         ElevationFocusing = False
-        assert x.shape == z.shape, 'X and Z must be of same size.'
+        assert np.array_equal(x.shape, z.shape), 'X and Z must be of same size.'
         y = np.zeros(x.shape)
     else:
         ElevationFocusing = True
@@ -235,17 +243,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     isMKMOVIE = False
     if 'CallFun' in options:
         isSIMUS = options.CallFun == 'simus'
-        isMKMOVIE = options.CallFun == 'mkmovie'
-    
-
+        isMKMOVIE = options.CallFun == 'mkmovie'    
+        
     #GB: TODO: do parallelism
-    # Check if SIMUS is running on a parallel pool
-    try:
-        onppool = isSIMUS and options.ParPool
-    except:
-        onppool = False
-
-    #GB TODO:  For the moment no statistics.
+    #GB TODO:  For txhe moment no statistics.
 
     
     #%---------------------------%
@@ -430,10 +431,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #%-----
     #% SIMUS and MKMOVIE first run a PFIELD with empty X,Y,Z to detect possible
     #% syntax errors.
-    if isSIMUS and x is None:
-        return [], []
-    if isMKMOVIE and x is None:
-        return [], []
+    if isSIMUS and len(x) == 0:
+        return [], [], []
+    if isMKMOVIE and len(x) == 0 and not options.get('computeIndices', False):
+        return [], [], []
     #-----
 
 
@@ -450,8 +451,8 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     z = z.reshape((-1,1))
 
     if isMKMOVIE:
-        x = np.concatenate((x, options.x.reshape((-1,1))))
-        z = np.concatenate([z, options.z.reshape((-1,1))])
+        x = np.concatenate((x, np.array(options.x).reshape((-1,1))))
+        z = np.concatenate([z, np.array(options.z).reshape((-1,1))])
         #% Note with MKMOVIE:
         #% We must consider the points of the image grid + the points of the
         #% scatterers (if any). The scatterer coordinates are in options.x and
@@ -574,7 +575,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
 
     #%-- For MKMOVIE only: IDX is required in MKMOVIE
     if isMKMOVIE and x is None:
-         return [], [], []
+         return [], [], IDX
 
     #%-- we need VECTORS
     pulseSPECT = pulseSpectrum(2*np.pi*f) # pulse spectrum
@@ -666,8 +667,8 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #%   backscattered echoes. We thus need the distances between the scatterers
     #%   and grid-points, and the corresponding EXP_RC matrix.
     if isMKMOVIE and options.RC is not None:
-        dx = x.reshape((1,-1))-options.x.reshape((-1, 1))
-        dz = z.reshape((1,-1))-options.z.reshape((-1,1))
+        dx = x.reshape((1,-1))-np.array(options.x).reshape((-1, 1))
+        dz = z.reshape((1,-1))-np.array(options.z).reshape((-1,1))
         r_RC = np.sqrt(dx**2 + dz**2)
 
         
@@ -796,9 +797,9 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         
        #%-- Output
         if isMKMOVIE: # % for MKMOVIE only (spectrum of the pressure field)
-            SPECT[k,:] = RPk[:nx]
-            if options.RC is not None:
-                SPECT[k,:] = SPECT[k,:] + RPk[nx:]*options.RC.flatten()*EXP_RC
+            SPECT[k,:] = RPk[:nx, 0]
+            if not utils.isEmpty(options.RC):
+                SPECT[k,:] = SPECT[k,:] + RPk[nx:]*np.array(options.RC).flatten()*EXP_RC
 
         elif isSIMUS: #% Receive: for SIMUS only (spectra of the RF signals)
             SPECT[k,:] = probeSPECT[k]  #... % the array bandwidth is considered

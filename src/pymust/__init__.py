@@ -12,6 +12,7 @@ if interactiveDevelopment:
     from pymust.txdelay import txdelay
     from pymust.utils import getDopplerColorMap
     from pymust.genscat import genscat
-
+    from pymust.genscat import genscat
+    from pymust.mkmovie import mkmovie
     # Missing functions: genscat, speckletracking, cite + visualsiation
     # Visualisation: pcolor, Doppler color map + transparency, radiofrequency data

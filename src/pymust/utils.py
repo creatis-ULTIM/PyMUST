@@ -1,6 +1,7 @@
-import numpy as np, scipy, scipy.interpolate
+import numpy as np, scipy, scipy.interpolate, multiprocessing, multiprocessing.pool
 from abc import ABC
 import inspect, matplotlib, pickle, os, matplotlib.pyplot as plt, copy
+from collections import deque
 
 class dotdict(dict, ABC):
     """Copied from https://stackoverflow.com/questions/2352181/how-to-use-a-dot-to-access-members-of-dictionary"""
@@ -28,13 +29,40 @@ class dotdict(dict, ABC):
         return copy.deepcopy(self)
     
 class Options(dotdict):
+    default_Number_Workers = 4
     @property 
     def names(self):
         names = {'dBThresh','ElementSplitting',
                 'FullFrequencyDirectivity','FrequencyStep','ParPool',
                 'WaitBar'}
         return {n.lower(): n for n in names}
+    
+    def getParallelPool(self):
+        workers = self.get('ParPool_NumWorkers', self.default_Number_Workers)
+        mode = self.get('ParPoolMode', 'thread')
+        if mode == 'process':
+            pool = multiprocessing.Pool(workers)
+        elif mode == 'thread':
+            pool = multiprocessing.pool.ThreadPool(workers)
+        else:
+             raise ValueError('ParPoolMode must be either "process" or "thread"')
+        return pool
+    
+    def getParallelSplitIndices(self, N,n_threads = None):
 
+        if hasattr(N, '__len__'):
+            N = len(N)
+        assert isinstance(N, int), 'N must be an integer'
+
+        n_threads = self.get('ParPool_NumWorkers', self.default_Number_Workers) if n_threads is None else n_threads
+        #Create indices for parallel processing, split in workers
+        idx = np.arange(0, N, N//n_threads)
+
+        #Repeat along new axis
+        idx = np.stack([idx, np.roll(idx, -1)], axis = 1)
+        idx[-1, 1] = N
+        return idx
+    
 class Param(dotdict):
     @property 
     def names(self):
@@ -74,8 +102,7 @@ def interp1(y, xNew, kind):
     if kind == 'spline':
         kind = 'cubic' #3rd order spline
     interpolator = scipy.interpolate.interp1d(np.arange(len(y)), y, kind = kind) 
-    return interpolator(xNew)
-
+    return interpolator(xNew)    
 
 def isnumeric(x):
     return isinstance(x, np.ndarray) or isinstance(x, int) or isinstance(x, float) or isinstance(x, np.number)
@@ -89,6 +116,37 @@ def islogical(v):
 def isfield(d, k ):
     return k in d
 
+
+
+def shiftdim(array, n=None):
+    """
+    From stack overflow https://stackoverflow.com/questions/67584148/python-equivalent-of-matlab-shiftdim
+    """
+    if n is not None:
+        if n >= 0:
+            axes = tuple(range(len(array.shape)))
+            new_axes = deque(axes)
+            new_axes.rotate(n)
+            return np.moveaxis(array, axes, tuple(new_axes))
+        return np.expand_dims(array, axis=tuple(range(-n)))
+    else:
+        idx = 0
+        for dim in array.shape:
+            if dim == 1:
+                idx += 1
+            else:
+                break
+        axes = tuple(range(idx))
+        # Note that this returns a tuple of 2 results
+        return np.squeeze(array, axis=axes), len(axes)
+
+def isEmpty(x):
+    return  x is None or (isinstance(x, list) and len(x) == 0) or (isinstance(x, np.ndarray) and len(x) == 0)
+
+def emptyArrayIfNone(x):
+    if isEmpty(x):
+        x =  np.array([])
+    return x
 
 def eps(s = 'single'):
     if s == 'single':

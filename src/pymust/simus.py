@@ -1,6 +1,14 @@
 from . import utils, pfield
-import logging, copy
+import logging, copy, multiprocessing, functools
 import numpy as np 
+
+# pfield wrapper so it is compatible with multiprocessing. Needs to be defined in a global scope
+def pfieldParallel(x, y, z, RC, delaysTX, param, options):
+    options = options.copy()
+    options.ParPool = False # No parallel within the parallel
+    options.RC = RC
+    _, RFsp, idx =  pfield(x, y, z, delaysTX, param, options)
+    return RFsp, idx
 
 def simus(*varargin):
     """
@@ -244,7 +252,7 @@ def simus(*varargin):
     assert isinstance(param, utils.Param),'PARAM must be a structure.'
 
     #%-- Elevation focusing and X,Y,Z size
-    if y is None:
+    if utils.isEmpty(y):
         ElevationFocusing = False
         assert x.shape == z.shape and x.shape == RC.shape, 'X, Z, and RC must be of same size.'
     else:
@@ -341,24 +349,6 @@ def simus(*varargin):
 
     maxD = maxD + np.max(delaysTX.flatten())*param.c
 
-    # TODO GB: for parallelism, use multiprocessing 
-    #%-- Split x, y, z and RC if using a PARALLEL POOL of workers
-    #assert(isscalar(options.ParPool) && islogical(options.ParPool),...
-    #    'OPTIONS.ParPool must be a logical scalar (true or false).')
-    #options.ParPool = options.ParPool &...
-    #    license('test','Distrib_Computing_Toolbox');
-    #if options.ParPool
-    #    pool = gcp;
-    #    NW = pool.NumWorkers; Nx = numel(x);
-    #    dim1Dist = [ones(1,NW-1)*floor(Nx/NW) Nx-(NW-1)*floor(Nx/NW)];
-    #    x = mat2cell(x(:),dim1Dist,1);
-    #    if ElevationFocusing
-    #        y = mat2cell(y(:),dim1Dist,1);
-    #    end
-    #    z = mat2cell(z(:),dim1Dist,1);
-    #    RC = mat2cell(RC(:),dim1Dist,1);
-    #end
-
     #%-- FREQUENCY SAMPLES
     df = 1/2/(2*maxD/param.c) # % to avoid aliasing in the time domain
     df = df*options.FrequencyStep
@@ -367,24 +357,23 @@ def simus(*varargin):
     #%-- Run PFIELD to calculate the RF spectra
     RFspectrum = np.zeros((Nf,NumberOfElements), dtype = np.complex128)# % will contain the RF spectra
     options.FrequencyStep = df
-    if False:
-         pass
+
     #%- run PFIELD in a parallel pool (NW workers)
-    #if options.ParPool
-    #   options.WaitBar = false;
-    #    spmd(NW)
-    #        options.RC = RC{labindex};
-    #        if ElevationFocusing
-    #            [~,~,RFsp,idx] = pfield(x{labindex},y{labindex},z{labindex},...
-    #                delaysTX,param,options);
-    #        else
-    #            [~,~,RFsp,idx] = pfield(x{labindex},z{labindex},...
-    #                delaysTX,param,options);
-    #        end
-    #    end
-    #    % sum the NW spectra (RFsp is a composite object)
-    #    for k = 1:NW
-    #        RFspectrum(idx{k},:) = RFspectrum(idx{k},:) + RFsp{k};
+    if options.get('ParPool', False):
+        
+        with options.getParallelPool() as pool:
+            idx = options.getParallelSplitIndices(x.shape[1])
+
+            RS = pool.starmap(functools.partial(pfieldParallel, delaysTX = delaysTX, param = param, options = options),
+                            [ ( x[:,i:j],
+                                y[:,i:j] if not utils.isEmpty(y) else None, 
+                                z[:,i:j], 
+                                RC[:,i:j]) for i,j in idx ])
+            
+
+            for (RFsp, idx_spectrum) in RS: 
+                RFspectrum[idx_spectrum, :] += RFsp
+
     #    end
     else:
         #%- no parallel pool 
