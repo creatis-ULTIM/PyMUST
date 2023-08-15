@@ -1,4 +1,4 @@
-from . import utils, pfield
+from . import utils, pfield, getpulse
 import logging, copy, multiprocessing, functools
 import numpy as np 
 
@@ -330,8 +330,9 @@ def simus(*varargin):
     if options.FrequencyStep>1:
        logging.warning('MUST:FrequencyStep', 'OPTIONS.FrequencyStep is >1: aliasing may be present!')
     
+    if not utils.isfield(param, 'c'):
+         param.c = 1540 #default sound speed in soft tissue
 
-    RadiusOfCurvature = param.radius # % array radius-of-curvature (in m)
 
 
     #%-------------------------------%
@@ -342,15 +343,14 @@ def simus(*varargin):
     #%-- Centers of the tranducer elements (x- and z-coordinates)
     xe, ze, THe, h= param.getElementPositions()
 
-
     #%-- Maximum distance
     d2 = (x.reshape((-1,1))-xe)**2+(z.reshape((-1,1))-ze)**2
     maxD = np.sqrt(np.max(d2)) #% maximum element-scatterer distance
-
-    maxD = maxD + np.max(delaysTX.flatten())*param.c
+    _, tp = getpulse.getpulse(param, 2)
+    maxD = maxD + tp[-1] * param.c #add pulse length
 
     #%-- FREQUENCY SAMPLES
-    df = 1/2/(2*maxD/param.c) # % to avoid aliasing in the time domain
+    df = 1/2/(2*maxD/param.c + np.max(delaysTX.flatten() + param.RXdelay.flatten())*param.c) # % to avoid aliasing in the time domain
     df = df*options.FrequencyStep
     Nf = 2*int(np.ceil(param.fc/df))+1 # % number of frequency samples
 
@@ -384,7 +384,7 @@ def simus(*varargin):
     #%-- RF signals (in the time domain)
     nf = int(np.ceil(param.fs/2/param.fc*(Nf-1)))
     RF = np.fft.irfft(np.conj(RFspectrum),nf, axis = 0)
-    RF = RF[:nf//2]*param.fs/4/param.fc
+    RF = RF[:(nf + 1)//2] #*param.fs/4/param.fc
 
     #%-- Zeroing the very small values
     RelThresh = 1e-5#; % -100 dB

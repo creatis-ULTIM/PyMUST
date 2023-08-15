@@ -1,5 +1,5 @@
-interactiveDevelopment = True
-if interactiveDevelopment:
+interactiveDevelopment = False # Put it to True if you are developing pymust, in order to allow easier reloading of the modules
+if not interactiveDevelopment:
     from pymust.bmode import bmode
     from pymust.dasmtx import dasmtx
     from pymust.getparam import getparam
@@ -14,5 +14,6 @@ if interactiveDevelopment:
     from pymust.genscat import genscat
     from pymust.genscat import genscat
     from pymust.mkmovie import mkmovie
+    from pymust.getpulse import getpulse
     # Missing functions: genscat, speckletracking, cite + visualsiation
     # Visualisation: pcolor, Doppler color map + transparency, radiofrequency data

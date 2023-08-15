@@ -1,7 +1,7 @@
 import numpy as np
 from . import utils    
 
-def getpulse(param: utils.Param, way :int = 2, PreVel : str = 'pressure'): 
+def getpulse(param: utils.Param, way :int = 2, PreVel : str = 'pressure', dt : float = 1e-09): 
     #GETPULSE   Get the transmit pulse
 #   PULSE = GETPULSE(PARAM,WAY) returns the one-way or two-way transmit
 #   pulse with a time sampling of 1 nanosecond. Use WAY = 1 to get the
@@ -81,7 +81,7 @@ def getpulse(param: utils.Param, way :int = 2, PreVel : str = 'pressure'):
     assert param.bandwidth > 0 and param.bandwidth < 200,'The fractional bandwidth at -6 dB (PARAM.bandwidth, in %) must be in ]0,200['
 
     #-- TX pulse: Number of wavelengths
-    if 'TXNow' not in param :
+    if 'TXnow' not in param :
         param.TXnow = 1
     
     NoW = param.TXnow
@@ -94,39 +94,15 @@ def getpulse(param: utils.Param, way :int = 2, PreVel : str = 'pressure'):
     
     FreqSweep = param.TXfreqsweep
     assert FreqSweep is None or (np.isscalar(FreqSweep) and utils.isnumeric(FreqSweep) and FreqSweep > 0),'PARAM.TXfreqsweep must be None (windowed sine) or a positive scalar (linear chirp).'
-    mysinc = lambda x = None: np.sinc(x / np.pi) # [note: In MATLAB/numpy, sinc is sin(pi*x)/(pi*x)]
     
-    #-- FREQUENCY SPECTRUM of the transmitted pulse
-    if FreqSweep is None:
-        # We want a windowed sine of width PARAM.TXnow
-        T = NoW / fc
-        wc = 2 * np.pi * fc
-        pulseSpectrum = lambda w = None: 1j * (mysinc(T * (w - wc) / 2) - mysinc(T * (w + wc) / 2))
-    else:
-        # We want a linear chirp of width PARAM.TXnow
-        # (https://en.wikipedia.org/wiki/Chirp_spectrum#Linear_chirp)
-        T = NoW / fc
-        wc = 2 * np.pi * fc
-        dw = 2 * np.pi * FreqSweep
-        s2 = lambda w = None: np.multiply(np.sqrt(np.pi * T / dw) * np.exp(- 1j * (w - wc) ** 2 * T / 2 / dw),(utils.fresnelint((dw / 2 + w - wc) / np.sqrt(np.pi * dw / T)) + utils.fresnelint((dw / 2 - w + wc) / np.sqrt(np.pi * dw / T))))
-        pulseSpectrum = lambda w = None: (1j * s2(w) - 1j * s2(- w)) / T
+    pulseSpectrum = param.getPulseSpectrumFunction(FreqSweep)
     
     #-- FREQUENCY RESPONSE of the ensemble PZT + probe
-    # We want a generalized normal window (6dB-bandwidth = PARAM.bandwidth)
-    # (https://en.wikipedia.org/wiki/Window_function#Generalized_normal_window)
-    wB = param.bandwidth * wc / 100
-    
-    p = np.log(126) / np.log(2 * wc / wB)
-    
-    probeSpectrum_sqr = lambda w: np.exp(- (np.abs(w - wc) / (wB / 2 / np.log(2) ** (1 / p))) ** p)
-    # The frequency response is a pulse-echo (transmit + receive) response. A
-    # square root is thus required when calculating the pressure field:
-    probeSpectrum = lambda w: np.sqrt(probeSpectrum_sqr(w))
+    probeSpectrum = param.getProbeFunction()
     # Note: The spectrum of the pulse (pulseSpectrum) will be then multiplied
     # by the frequency-domain tapering window of the transducer (probeSpectrum)
     
     #-- frequency samples
-    dt = 1e-09
     eps = 1e-9 
 
     df = param.fc / param.TXnow / 32

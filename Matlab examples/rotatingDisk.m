@@ -1,6 +1,6 @@
 addpath('~/Downloads/MUST')
 param = getparam('P4-2v');
-nPoints = 200000;
+nPoints = 20000;
 xs = rand(1,nPoints)*12e-2-6e-2;
 zs =rand(1,nPoints)*12e-2;
 
@@ -25,7 +25,7 @@ param.PRP = 1e-3;
 tic
 for i  = 1:nreps
     options.dBThresh = -6;
-    options.ParPool = true;
+    options.ParPool = false;
 
     [xs_rot, zs_rot] = rotatePoints(xs(idx), zs(idx), 0, centerDisk,  w *  param.PRP);
     xs(idx) = xs_rot;
