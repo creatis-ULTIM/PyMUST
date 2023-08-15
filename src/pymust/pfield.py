@@ -1,24 +1,27 @@
 
 import numpy as np
 from . import utils
-import numba
 
-numba_available = True
-if numba_available:
-    #
-    # This is because the numpy implementation of average is way too slow when compared to directly adding the last channel.
-    # With numba, I get quite a speed up, reaching almost the same speed as hardcoded sum (x25%)
-    #
-    @numba.jit
-    def average_over_last_axis(X):
-        res = np.zeros(X.shape[:-1],dtype=X.dtype)
-        for i in range(X.shape[-1]):
-            res += X[..., i]
-        return res/X.shape[-1]
-else:
-    def average_over_last_axis(X):
+# Ugly optimisation trick, of loop unraveling, as np.mean/np.sum has a large overhead for iterating over few dimesions
+# for i in range(1, 10):
+#   r = '+'.join([f'X[...,{j}]' for j in range(i)])
+#   print(f'average_function_by_i[{i}] = lambda X: ({r})/{i}')
+average_function_by_i = [None] * 10
+average_function_by_i[1] = lambda X: (X[...,0])/1
+average_function_by_i[2] = lambda X: (X[...,0]+X[...,1])/2
+average_function_by_i[3] = lambda X: (X[...,0]+X[...,1]+X[...,2])/3
+average_function_by_i[4] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3])/4
+average_function_by_i[5] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4])/5
+average_function_by_i[6] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5])/6
+average_function_by_i[7] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6])/7
+average_function_by_i[8] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6]+X[...,7])/8
+average_function_by_i[9] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6]+X[...,7]+X[...,8])/9
+
+def average_over_last_axis(X):
+    if X.shape[-1] < len(average_function_by_i):
+        return average_function_by_i[X.shape[-1] ](X)
+    else:
         return np.mean(X, axis = -1)
-
 
 eps = 1e-16
 mysinc = lambda x = None: np.sin(np.abs(x) + eps)/ (np.abs(x) + eps) # [note: In MATLAB/numpy, sinc is sin(pi*x)/(pi*x)]
@@ -704,7 +707,6 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         SPECT = np.zeros((nSampling,nx),dtype=np.complex64)
     EXP = EXP.astype(np.complex64)
     # TODO GB: process several frequencies at the same time might remove some overhead of numpy calls
-    print(nSampling)
     for k  in range(nSampling):
 
         kw = 2*np.pi*f[k]/c #; % wavenumber

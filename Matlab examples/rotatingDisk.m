@@ -1,6 +1,6 @@
 addpath('~/Downloads/MUST')
 param = getparam('P4-2v');
-nPoints = 20000;
+nPoints = 200000;
 xs = rand(1,nPoints)*12e-2-6e-2;
 zs =rand(1,nPoints)*12e-2;
 
@@ -25,14 +25,14 @@ param.PRP = 1e-3;
 tic
 for i  = 1:nreps
     options.dBThresh = -6;
-    options.ParPool = false;
+    options.ParPool = true;
 
     [xs_rot, zs_rot] = rotatePoints(xs(idx), zs(idx), 0, centerDisk,  w *  param.PRP);
     xs(idx) = xs_rot;
     zs(idx) = zs_rot;
     width = 60/180*pi; %width angle in rad
     txdel = txdelay(param,0,width); % in s
-    [RF, RF_spectrum] = simus(xs,zs,RC,txdel,param, options);
+    [RF, param, RF_spectrum] = simus(xs,zs,RC,txdel,param, options);
     param.fs = 4 * param.fc;
     IQ(:, :, i) = rf2iq(RF,param);
 end 
