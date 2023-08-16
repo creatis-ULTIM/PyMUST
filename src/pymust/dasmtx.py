@@ -612,3 +612,14 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
         M = scipy.sparse.coo_matrix((s,(i,j)), shape= (len(x),nl*nc))
             #% M is a [numel(x)]-by-[nl*nc] sparse matrix
     return M #TODO: maybe use another type of sparse matrix will be more efficient
+
+
+class DasMTX:
+    def __init__(self, SIG, x, z, param):
+        self.M = dasmtx(SIG, x, z, param)
+        self.shape = x.shape
+    def __apply__(self, SIG):
+        return (self.M @ SIG.flatten(order = 'F')).reshape(self.shape, order = 'F')
+
+
+    

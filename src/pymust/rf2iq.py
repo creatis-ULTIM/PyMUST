@@ -154,12 +154,11 @@ def rf2iq(RF : np.ndarray, Fs : Union[float, utils.Param], Fc : float = None, B 
         else:
             idx = np.random.permutation(Nc)[:100]
         #% Power Spectrum
-        P = np.linalg.norm(np.fft.rfft(RF[:,idx]),1)
-
+        P = np.linalg.norm(np.fft.rfft(RF[:,idx], axis = 0),axis =1)
+        freqs = np.fft.rfftfreq(RF.shape[0],1/Fs)
         #% Carrier frequency
-        idx = np.sum(np.arange(len(P))*P)/np.sum(P)
-        Fc = idx*Fs/nl
-
+        Fc = np.sum(freqs*P)/np.sum(P)
+    
     #%-- Normalized cut-off frequency
     if B is None:
         Wn = min(2*Fc/Fs,0.5)
