@@ -115,7 +115,7 @@ def iq2doppler(IQ:np.ndarray, param: utils.Param, M: typing.Union[int,np.ndarray
     if  M[0] != 1 or M[1] != 1: # % spatial weighted average
         P = scipy.signal.convolve2d(P,h, 'same', boundary='symmetric')
 
-    variance = 2*(c*PRF/4/fc/lag/np.pi)**2*(1-np.abs(AC)/P)
+    variance = 2*(VN/np.pi)**2*(1-np.abs(AC)/P)
     #%-- cf. Eq. 7.48 in Estimation of Blood Velocities Using Ultrasound:
     #%   A Signal Processing Approach by Jørgen Arendt Jensen,
     #%   Cambridge University Press, 1996

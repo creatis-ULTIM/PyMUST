@@ -37,3 +37,11 @@ for i  = 1:nreps
     IQ(:, :, i) = rf2iq(RF,param);
 end 
 toc
+
+% Beamforming
+[x, z] = impolgrid(128,10e-2,pi/2,param); 
+M = dasmtx(IQ(:,:,1),x, z,txdel, param);
+IQ_r = reshape(IQ, [size(M, 2), size(IQ, 3)]);
+IQb = M*IQ_r;
+IQb = reshape(IQb, [size(x,1), size(x,2), size(IQ, 3)]);
+[v, var] = iq2doppler(IQb, param);

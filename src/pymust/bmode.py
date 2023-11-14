@@ -14,10 +14,10 @@ def bmode(IQ : np.ndarray, DR: float= 40):
     %
     %   Example:
     %   -------
-    %   %-- Analyze undersampled RF signals and generate B-mode images
-    %   % Download experimental data (128-element linear array + rotating disk) 
+    %   #-- Analyze undersampled RF signals and generate B-mode images
+    %   # Download experimental data (128-element linear array + rotating disk) 
     %   load('PWI_disk.mat')
-    %   % Demodulate the RF signals with RF2IQ.
+    %   # Demodulate the RF signals with RF2IQ.
     %   IQ = rf2iq(RF,param);
     %   % Create a 2.5-cm-by-2.5-cm image grid.
     %   dx = 1e-4; % grid x-step (in m)

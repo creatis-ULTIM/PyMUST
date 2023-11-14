@@ -171,6 +171,6 @@ def getparam(probe : str):
         param.Nelements = 64
         param.bandwidth = 2 / 3 * 100
     else:
-        raise Exception(np.array(['The probe ',probe,' is unknown.',' You may complete this function for your own use']))
+        raise Exception(np.array(['The probe ',probe,' is unknown. Should be one of [L11-5V, L12-3V, C5-2V, P4-2V, PA4-2/20, L9-4/38, LA530, L14-5/38, L14-5W/60, P6-3]']))
 
     return param
