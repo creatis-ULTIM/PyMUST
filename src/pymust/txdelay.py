@@ -5,7 +5,7 @@ def txdelayCircular(param, tilt, width):
     return txdelay(param, tilt, width)
 
 def txdelayPlane(param, tilt):
-    returntxdelay(param, tilt)
+    return txdelay(param, tilt)
 
 def txdelayFocused(param, x, y):
     return txdelay(x, y, param)

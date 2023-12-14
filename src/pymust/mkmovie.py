@@ -5,8 +5,22 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 
 def mkmovie(*varargin):
     """
+    How to call:
+    
+    mkmovie(delaysTX,param)
+    mkmovie(x, z,RC,delaysTX,param)
+
+    You can add a path (in string format) as last argument to save the movie as a gif.
+    You can also add an option structure as last argument (if there is no path argument) 
+    or second-last (in case there is a path argument) that will give otpions for the computation.
+
+    Returns
+    F: 3D matrix with the pressure fields as a function of time (the last dimension encodes time)
+    info: struct with information on the movie (fps and grid)
+    param: same parameter as input, only kept for matlab compatibility. To remove in a future.
+
     %MKMOVIE   Create movie frames and animated GIF for wave propagation
-    %   F = MKMOVIE(DELAYS,PARAM) simulates ultrasound RF radio-frequency
+    %   F, info, param = MKMOVIE(DELAYS,PARAM) simulates ultrasound RF radio-frequency
     %   signals by using PFIELD and returns movie frames. The array elements
     %   are excited at different time delays, given by DELAYS (in s). The
     %   characteristics of the transmit and receive must be given in the
@@ -14,13 +28,12 @@ def mkmovie(*varargin):
     %
     %   Note: MKMOVIE works in a 2-D space.
     %
-    %   >--- Try it: enter "mkmovie" in the command window for an example ---< 
     %
     %   By default, the ROI is of size 2L-by-2L, with L being the aperture
     %   length of the array [i.e. L = pitch*(Number_of_elements-1)], and its
     %   resolution is 50 pix/cm. These values can be modified through
     %   PARAM.movie:
-    %       e.g. PARAM.movie = [ROI_width ROI_height resolution]
+    %       e.g. PARAM.movie = [ROI_width, ROI_height, resolution]
     %       IMPORTANT: Pay attention to the units!
     %                  Width and height are in cm, resolution is in pix/cm.
     %
@@ -81,12 +94,6 @@ def mkmovie(*varargin):
     %   [F,INFO,PARAM] = MKMOVIE(...) updates the fields of the PARAM
     %   structure.
     %
-    %   [...] = MKMOVIE without any input argument provides an interactive
-    %   example designed to produce a movie using a 2.5 MHz phased-array
-    %   transducer.
-    %
-    %   [...] = MKMOVIE(...,OPTIONS) uses the structure OPTIONS to adjust the
-    %   simulations performed by PFIELD:
     %   
     %   OPTIONS:
     %   -------
@@ -204,14 +211,14 @@ def mkmovie(*varargin):
             x = []; 
             z = []; 
             RC = []; 
-    elif Nargin == 4: #mkmovie(x,z,RC,delaysTX,param)
+    elif Nargin == 5: #mkmovie(x,z,RC,delaysTX,param)
             x = varargin[0]
             z = varargin[1]
             RC = varargin[2]
             delaysTX = varargin[3]
             param = varargin[4]
             options = utils.Options()
-    elif Nargin == 5: #% mkmovie(x,z,RC,delaysTX,param,options)
+    elif Nargin == 6: #% mkmovie(x,z,RC,delaysTX,param,options)
             x = varargin[0]
             z = varargin[1]
             RC = varargin[2]

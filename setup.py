@@ -10,5 +10,6 @@ setup(name='pymust',
       url='https://www.biomecardio.com/en//',
       packages=['pymust'],
       install_requires=['numpy', 'matplotlib', 'scipy'],
+      license = 'GNU Lesser General Public License v3.0 (LGPL v3)',
       package_dir={'':'src'}
      )

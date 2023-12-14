@@ -164,7 +164,7 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
     %   See also DAS(Not available in Python), DASMTX3 (Not available in Python), SIMUS, TXDELAY, RF2IQ, GETPARAM.
     %
     %   -- Damien Garcia -- 2017/10, last update 2022/05/06
-    %   -- Gabriel Bernardino -- last update 2023/08/18 -> Updating the comments to reflect the Pyhton version
+    %   -- Gabriel Bernardino -- last update 2023/08/18 -> Updating the comments to reflect the Python version
     %   website: <a
     %   href="matlab:web('http://www.biomecardio.com')">www.BiomeCardio.com</a>
 
@@ -420,8 +420,8 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
         #% Note: in Matlab, sinc(x) = sin(pi*x)/(pi*x)
         f = lambda th,width= ElementWidth,l= lambdaMIN: np.abs(np.cos(th+RXa)*np.sinc(width/l*np.sin(th+RXa))-0.71)
 
-        x = scipy.optimize.fminbound(f,0,np.pi/2-RXa,xtol= np.pi/100)
-        alpha = x
+        xx = scipy.optimize.fminbound(f,0,np.pi/2-RXa,xtol= np.pi/100)
+        alpha = xx
         param.fnumber = 1/2/np.tan(alpha)
 
     fNum = param.fnumber

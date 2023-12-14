@@ -10,6 +10,7 @@ def pfieldParallel(x, y, z, RC, delaysTX, param, options):
     _, RFsp, idx =  pfield(x, y, z, delaysTX, param, options)
     return RFsp, idx
 
+
 def simus(*varargin):
     """
     %SIMUS   Simulation of ultrasound RF signals for a linear or convex array
@@ -214,6 +215,8 @@ def simus(*varargin):
     %   href="matlab:web('https://www.biomecardio.com')">www.BiomeCardio.com</a>
     """
 
+    returnTime = False #NoteGB: Set to True if you want to return the time, but quite a mess right now with the matlab style arguments
+
     nargin = len(varargin)
     if nargin<= 3 or nargin > 7:
         raise ValueError("Wrong number of input arguments.")
@@ -390,4 +393,8 @@ def simus(*varargin):
     tmp2= lambda RelRF: 0.5*(1+np.tanh((RelRF-RelThresh)/(RelThresh/10)))
     tmp = lambda RelRF: np.round(tmp2(RelRF)/(RelThresh/10))*(RelThresh/10)
     RF = RF*tmp(np.abs(RF)/np.max(np.abs(RF)))
-    return RF,RFspectrum
+    if returnTime: 
+        return RF,RFspectrum, np.arange(RF.shape[0])/param.fs
+    else:
+         return RF,RFspectrum
+

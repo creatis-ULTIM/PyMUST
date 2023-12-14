@@ -600,7 +600,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         SPECT = np.zeros((nSampling, NumberOfElements), dtype = np.complex64)
     elif isMKMOVIE:
         #%- For MKMOVIE only (we need the full spectrum of the pressure field):
-        SPECT = np.zeros((nSampling, nx), dtype = np.complex65)
+        SPECT = np.zeros((nSampling, nx), dtype = np.complex64)
     #elseif nargout==3
     #    SPECT = zeros([nSampling nx],'like',single(1i));
     #end
@@ -644,7 +644,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     else:
         EXP = EXP*ObliFac/np.sqrt(r)
 
-    if options.RC is not None:
+    if options.RC is not None and len(options.RC):
         options.RC = options.RC.astype(np.float32)
     #clear ObliFac r
 
