@@ -462,6 +462,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     if isMKMOVIE:
         x = np.concatenate((x, np.array(options.x).reshape((-1,1))))
         z = np.concatenate([z, np.array(options.z).reshape((-1,1))])
+        y = np.concatenate([y, np.zeros((len(options.x), 1))])
         #% Note with MKMOVIE:
         #% We must consider the points of the image grid + the points of the
         #% scatterers (if any). The scatterer coordinates are in options.x and
@@ -557,9 +558,24 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     S = np.abs(pulseSpectrum(2*np.pi*f)*probeSpectrum(2*np.pi*f))
 
     GdB = 20*np.log10(1e-200 + S/np.max(S))# % gain in dB
-    IDX = GdB >options.dBThresh
+    id = np.where(GdB >options.dBThresh)
+    IDX = np.zeros(f.shape) != 0.
+    IDX[id[0][0]:id[0][-1]] = True
+
     f = f[IDX]
     nSampling = len(f)
+
+
+    #-- Frequency correction (added on April 24, 2023)
+    #   Note: The frequencies are shifted such that the center frequency for a
+    #         a pulse-echo is exactly PARAM.fc.
+    # pulse-echo spectrum
+    F = pulseSpectrum(2*np.pi*f)*probeSpectrum(2*np.pi*f)**2;
+    # predicted center frequency
+    P = np.abs(F)**2; #% power
+    Fc = np.trapz(f*P)/np.trapz(P)
+    # corrected frequencies
+    f = f+Fc-fc
 
     #%-- For MKMOVIE only: IDX is required in MKMOVIE
     if isMKMOVIE and x is None:
@@ -657,15 +673,13 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #%   backscattered echoes. We thus need the distances between the scatterers
     #%   and grid-points, and the corresponding EXP_RC matrix.
     if isMKMOVIE and options.RC is not None:
-        dx = x.reshape((1,-1))-np.array(options.x).reshape((-1, 1))
-        dz = z.reshape((1,-1))-np.array(options.z).reshape((-1,1))
+        dx = x[:nx].reshape((-1,1))-np.array(options.x).reshape((1, -1))
+        dz = z[:nx].reshape((-1,1))-np.array(options.z).reshape((1,-1))
         r_RC = np.sqrt(dx**2 + dz**2)
-
         
         #% EXP_RC = exp((-kwa+1i*kw)*r_RC);
-        EXP_RC = np.exp(-kwa*r_RC + 1j*np.mod(kw*r_RC,2*np.pi))
-        EXPdf_RC = np.exp((-dkwa + 1j*dkw)*r_RC)
-
+        EXP_RC = np.exp(-kwa*r_RC + 1j*np.mod(kw*r_RC,2*np.pi)).astype(np.complex64)
+        EXPdf_RC = np.exp((-dkwa + 1j*dkw)*r_RC).astype(np.complex64)
 
     #%-- Simplified directivity (if not dependent on frequency)
     #% In the "simplified directivity" version, the directivity of the elements
@@ -736,7 +750,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         if k>0:
             EXP = EXP*EXPdf
             #% If PFIELD is called by MKMOVIE and if scatterers are present:
-            if isMKMOVIE and options.RC is None:
+            if isMKMOVIE and not utils.isEmpty(options.RC):
                 EXP_RC = EXP_RC*EXPdf_RC
 
 
@@ -791,12 +805,13 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         if isMKMOVIE: # % for MKMOVIE only (spectrum of the pressure field)
             SPECT[k,:] = RPk[:nx, 0]
             if not utils.isEmpty(options.RC):
-                SPECT[k,:] = SPECT[k,:] + RPk[nx:]*np.array(options.RC).flatten()*EXP_RC
+                SPECT[k,:] += EXP_RC @ (RPk[nx:].flatten()*np.array(options.RC.astype(np.complex64)).flatten()) 
+#                print(np.linalg.norm(EXP_RC), np.linalg.norm(RPk[nx:]), np.linalg.norm(options.RC))
 
         elif isSIMUS: #% Receive: for SIMUS only (spectra of the RF signals)
             SPECT[k,:] = probeSPECT[k]  #... % the array bandwidth is considered
 
-            SPECT[k,:] *= ((RPk.flatten()*options.RC.flatten()).reshape((1, -1)) @ RPmono).flatten()  #... % pressure received by the elements
+            SPECT[k,:] *= ((RPk.flatten()*options.RC.flatten()).reshape((1, -1)) @ RPmono).flatten()  #... % pressure received by the elements)
             #SPECT[k, :] *= np.dot(RPk.flatten()*options.RC.flatten(), RPmono ) # Trying to see if it is faster, no evidence whatsoever
                 #; % *f(k)^2/fc^2; % Rayleigh scattering (OPTIONAL)
 

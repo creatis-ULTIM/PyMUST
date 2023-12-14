@@ -239,7 +239,7 @@ def mkmovie(*varargin):
 
     assert isinstance(param, utils.Param),'The structure PARAM is required.'
     if not utils.isEmpty(x) or   not utils.isEmpty(z)  or not utils.isEmpty(RC):
-        assert np.array_equal(x.shape, y.shape) and  np.array_equal(x.shape, z.shape) and  np.array_equal(x.shape, RC.shape),'X, Z and RC must be of same size.'
+        assert np.array_equal(x.shape, z.shape) and np.array_equal(x.shape, RC.shape),'X, Z and RC must be of same size.'
 
     #%-- Check if syntax errors may appear when using PFIELD
     opt = options.copy()
@@ -290,9 +290,9 @@ def mkmovie(*varargin):
     ROIwidth = param.movie[0]*1e-2;  # image width (in m)
     ROIheight = param.movie[1]*1e-2; # image height (in m)
     pixsize = 1/param.movie[2]*1e-2; #% pixel size (in m)
-    xi = np.arange(pixsize/2,ROIwidth-pixsize/2, pixsize);
-    zi = np.arange(pixsize/2,ROIheight-pixsize/2, pixsize);
-    xi,zi = np.meshgrid(xi-np.mean(xi),zi);
+    xi = np.arange(pixsize/2,ROIwidth  + pixsize/2, pixsize);
+    zi = np.arange(pixsize/2,ROIheight + pixsize/2, pixsize);
+    xi, zi = np.meshgrid(xi-np.mean(xi), zi);
 
 
     #%-- Frequency sampling
@@ -322,7 +322,8 @@ def mkmovie(*varargin):
 
     #-- IFFT to recover the time-resolved signals
     #%
-    F = SPECT #; clear SPECT
+    #F = SPECT #; clear SPECT
+    F = SPECT
     F = F.reshape([Nf, xi.shape[0], xi.shape[1]]) #reshape(F,Nf,size(xi,1),size(xi,2));
     F = utils.shiftdim(F,1)
 
@@ -334,7 +335,7 @@ def mkmovie(*varargin):
     
 
     #%
-    F = np.fft.irfft(F, axis = 2); # Note GB: not Sure if you need the expanded version, or the single spectra is enoguht
+    F = np.fft.irfft(F, axis = 2); # Note GB: not Sure if you need the expanded version, or the single spectra is enoguh
     #%
 
     #%
