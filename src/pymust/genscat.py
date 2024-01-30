@@ -237,7 +237,7 @@ def genscat(roidim,meandist,I = None,g = None):
             g = 40  #% default value for log compression
         
         if len(roidim)==2:
-            interp =  scipy.interpolate.RegularGridInterpolator([xi,zi], I, method = 'linear', fill_value=0, bounds_error = False)
+            interp =  scipy.interpolate.RegularGridInterpolator([xi,zi], I.T, method = 'linear', fill_value=0, bounds_error = False)
             RC = interp(np.stack([xs,zs], axis = -1))
         elif len(roidim)==3:
             interp =  scipy.interpolate.RegularGridInterpolator([xi, yi, zi], I, method = 'linear', fill_value=0, bounds_error = False)
