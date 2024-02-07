@@ -9,7 +9,7 @@ if not interactiveDevelopment:
     from pymust.rf2iq import rf2iq
     from pymust.simus import simus
     from pymust.tgc import tgc
-    from pymust.txdelay import txdelay
+    from pymust.txdelay import txdelay, txdelayCircular, txdelayPlane, txdelayFocused
     from pymust.utils import getDopplerColorMap
     from pymust.genscat import genscat
     from pymust.genscat import genscat

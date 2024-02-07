@@ -335,7 +335,7 @@ def mkmovie(*varargin):
     
 
     #%
-    F = np.fft.irfft(F, axis = 2); # Note GB: not Sure if you need the expanded version, or the single spectra is enoguh
+    F = np.fft.irfft(F, axis = 2); # Note GB: not Sure if you need the expanded version covering positive and negative, or the single spectra is enoguh
     #%
 
     #%
@@ -357,7 +357,7 @@ def mkmovie(*varargin):
 
     #%-- animated GIF
     if isGIF:
-
+        plotScatters = options.get('plotScatterers', False)
         # Cretae the colormap, see https://matplotlib.org/3.1.0/tutorials/colors/colormap-manipulation.html
         N = 256
         vals = np.ones((N, 4))
@@ -416,6 +416,11 @@ def mkmovie(*varargin):
         def animate(i):
             ax.clear()
             im = ax.imshow(F[:, :,ks[i]], cmap = cm2, extent=[info.Xgrid[0]*1e2,info.Xgrid[-1]*1e2,info.Zgrid[-1]*1e2,info.Zgrid[0]*1e2])
+            if plotScatters:
+                dx = info.Xgrid[1] - info.Xgrid[0]
+                dz = info.Zgrid[1] - info.Zgrid[0]
+                ax.scatter(x/dx,z/dz, s = 5, c = 'w', marker = 'o', facecolors = 'none')
+
             im.set_clim(0,255)
             plt.xlabel('x (cm)')
             plt.ylabel('z (cm)')

@@ -805,7 +805,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         if isMKMOVIE: # % for MKMOVIE only (spectrum of the pressure field)
             SPECT[k,:] = RPk[:nx, 0]
             if not utils.isEmpty(options.RC):
-                SPECT[k,:] += EXP_RC @ (RPk[nx:].flatten()*np.array(options.RC.astype(np.complex64)).flatten()) 
+                SPECT[k,:] += EXP_RC @ (RPk[nx:].flatten()*options.RC) 
 #                print(np.linalg.norm(EXP_RC), np.linalg.norm(RPk[nx:]), np.linalg.norm(options.RC))
 
         elif isSIMUS: #% Receive: for SIMUS only (spectra of the RF signals)
