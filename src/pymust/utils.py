@@ -28,7 +28,13 @@ class dotdict(dict, ABC):
         return self
     def copy(self):
         return copy.deepcopy(self)
-    
+    def __getstate__(self):
+        d = {k : v for k,v in self.items()}
+        return d
+    def __setstate__(self, d):
+        for k, v in self.items():
+            self[k] = v
+        
 class Options(dotdict):
     default_Number_Workers = multiprocessing.cpu_count()
     @property 
@@ -50,7 +56,6 @@ class Options(dotdict):
         return pool
     
     def getParallelSplitIndices(self, N,n_threads = None):
-
         if hasattr(N, '__len__'):
             N = len(N)
         assert isinstance(N, int), 'N must be an integer'
@@ -63,7 +68,7 @@ class Options(dotdict):
         idx = np.stack([idx, np.roll(idx, -1)], axis = 1)
         idx[-1, 1] = N
         return idx
-    
+
 class Param(dotdict):
     @property 
     def names(self):
@@ -249,7 +254,7 @@ def polarplot(x, z, v, cmap = 'gray',background = 'black'):
 
 def getDopplerColorMap():
     source_file_path = inspect.getfile(inspect.currentframe())
-    with open( os.path.join(os.path.dirname(source_file_path), 'Data/colorMap.pkl'), 'rb') as f:
+    with open( os.path.join(os.path.dirname(source_file_path), 'Data', 'colorMap.pkl'), 'rb') as f:
         dMap = pickle.load(f)
     new_cmap = matplotlib.colors.LinearSegmentedColormap('doppler', dMap)
     dopplerCM = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(),cmap=new_cmap)

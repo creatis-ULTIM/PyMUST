@@ -102,7 +102,7 @@ def iq2doppler(IQ:np.ndarray, param: utils.Param, M: typing.Union[int,np.ndarray
     AC = np.sum(IQ1*np.conj(IQ2),2)  # ensemble auto-correlation
 
     if  M[0] != 1 or M[1] != 1: #isequal([M(1) M(2)],[1 1]) % spatial weighted average
-        h = scipy.signal.windows.hamming(M[1]).reshape((-1, 1))*scipy.signal.windows.hamming(M[2]).reshape((1, -1))
+        h = scipy.signal.windows.hamming(M[0]).reshape((-1, 1))*scipy.signal.windows.hamming(M[1]).reshape((1, -1))
         AC = scipy.signal.convolve2d(AC,h, 'same', boundary='symmetric')
 
     #%-- Doppler velocity
