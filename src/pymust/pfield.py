@@ -797,7 +797,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         #RPk = RPk.reshape((-1,1))
 
         #%- include spectrum responses:
-        RPk = pulseSPECT[k]*probeSPECT[k]*RPk
+        RPk = pulseSPECT[k]*RPk* probeSPECT[k]
 
         RPk[isOUT] = 0 #<- if not jax
         

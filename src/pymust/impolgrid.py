@@ -84,7 +84,7 @@ def impolgrid(siz : typing.Union[int, np.ndarray, list ], zmax : float, width:fl
     if isinstance(siz, int):
         siz = np.array([siz, siz])
 
-    assert np.all(siz>0) and siz.dtype == np.int64, 'SIZ components must be positive integers.'
+    assert np.all(siz>0) and np.issubdtype(siz.dtype, np.integer), 'SIZ components must be positive integers.'
 
     assert np.isscalar(zmax) and zmax>0, 'ZMAX must be a positive scalar.'
 
