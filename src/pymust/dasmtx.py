@@ -185,9 +185,9 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
     #% CHECK THE INPUT SYNTAX %
     #%------------------------%
 
-    NArg = len(varargin) +3
-    assert NArg>3,'Not enough input arguments.'
-    assert NArg<7,'Too many input arguments.'
+    NArg = len(varargin) 
+    assert NArg>0,'Not enough input arguments.'
+    assert NArg<4,'Too many input arguments.'
     #% assert(nargout<3,'Too many output arguments.')
 
     assert x.shape == z.shape,'X and Z must of same size.'
@@ -211,7 +211,7 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
         NArg = NArg
 
 
-    if NArg==4: #% DASMTX(SIG,x,z,param)
+    if NArg==1: #% DASMTX(SIG,x,z,param)
         if isinstance(varargin[0], utils.Param):
             param = varargin[0]
             param.ignoreCaseInFieldNames()
@@ -505,8 +505,10 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
     j, i = np.where(I.T) # GB: This weird inverion is to make sure that the ordering is consistent with matlab
     idx = np.take(idx_matrix, np.ravel_multi_index([i,j], I.shape)) 
     tau_I = np.take(tau, np.ravel_multi_index([i,j], I.shape))
-    idxf = np.floor(idx).astype(int)
-    idx = idx-idxf
+
+    if method != 'nearest':
+        idxf = np.floor(idx).astype(int)
+        idx = idx-idxf
 
 
     #%-- Let's fill in the sparse DAS matrix

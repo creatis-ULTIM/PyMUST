@@ -120,7 +120,7 @@ def rf2iq(RF : np.ndarray, Fs : Union[float, utils.Param], Fc : float = None, B 
     """
 
     #%-- Check input arguments
-    assert np.isreal(RF[0,0]),'RF must contain real RF signals.'
+    assert np.issubdtype(RF.dtype, np.floating),'RF must contain real RF signals.'
     t0 = 0; #% default value for time offset
     if isinstance(Fs, utils.Param):
         param = Fs
@@ -171,7 +171,9 @@ def rf2iq(RF : np.ndarray, Fs : Union[float, utils.Param], Fc : float = None, B 
     assert Wn>0 and Wn<=1,'The normalized cutoff frequency is not within the interval of (0,1). Check the input parameters!'
 
     #%-- Down-mixing of the RF signals
-    IQ = np.exp(-1j*2*np.pi*Fc*t.reshape((-1,1)))*RF
+    exponential = np.exp(-1j*2*np.pi*Fc*t)
+    exponential = exponential.reshape( [-1] + [1 for _ in range(RF.ndim-1)])
+    IQ =exponential*RF
 
 
    # %-- Low-pass filter
@@ -186,7 +188,7 @@ def rf2iq(RF : np.ndarray, Fs : Union[float, utils.Param], Fc : float = None, B 
     if B is not None and Fs<(2*Fc+B): #% the RF signal is undersampled
         fL = Fc-B/2; fH = Fc+B/2; #% lower and higher frequencies of the bandpass signal
         n = int(np.floor(fH/(fH-fL)))
-        harmlessAliasing = np.any(2*fH/np.arange(n) <=Fs & Fs<=2*fL/np.arange(n))
+        harmlessAliasing = np.any(np.logical_and(2*fH/np.arange(1,n+1) <=Fs,  Fs<=2*fL/(np.arange(n) +1e-10)))
         if not harmlessAliasing:
             logging.warning('RF2IQ:harmfulAliasing: Harmful aliasing is present: the aliases are not mutually exclusive!')
     return IQ
