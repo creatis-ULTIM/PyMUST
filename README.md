@@ -1,4 +1,4 @@
-# pymust
+# PyMUST
 
 This is a Python reimplementation of the MUST ultrasound toolbox for synthetic image generation and reconstruction (https://www.biomecardio.com/MUST/).
 
@@ -10,16 +10,22 @@ As a design decision, we have tried to keep syntax as close as possible with the
 
 To install pymust with its dependencies (matplotlib, scipy, numpy), run:
 
-> pip install -e .
+> pip install git+https://github.com/creatis-ULTIM/PyMUST.git
 
 We recommend installing it in a separate conda environment.
 
+## Main functions
+Please refer to the Matlab documentation
+- Transducer (getparam)
+- Simulation (simus, pfield)
+- Bmode and Dopplerformation from radiofrequencies (tgc, rf2iq, bmode, iq2doppler)
+
+## Examples
+In the folder examples, you have the 
 
 ## Next steps
 
 - Port of 3D reconstruction and simulation.
-- Port of sptrack and smoothn.
 - Parallelize the simus and pfiel computations.
 - Update function documentation.
-- Add examples.
 - Find computational bottlenecks, and optimise (possibly with C extensions).
