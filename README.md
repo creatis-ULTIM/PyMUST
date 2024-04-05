@@ -21,7 +21,7 @@ Please refer to the Matlab documentation
 - Bmode and Dopplerformation from radiofrequencies (tgc, rf2iq, bmode, iq2doppler)
 
 ## Examples
-In the folder examples, you have the 
+In the folder "examples", you have python notebooks ilustrating the main functionalities of PyMUST. They are the same as the ones available in the Matlab version.
 
 ## Next steps
 
