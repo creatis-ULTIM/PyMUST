@@ -141,7 +141,8 @@ def smoothn(y : np.ndarray,
     if S is None:
         isauto = True
     else:
-        assert utils.isempty(S) or (np.isscalar(S) and S>0), 'The smoothing parameter S must be a scalar >0'
+        isauto = False
+        assert (np.isscalar(S) and S>0), 'The smoothing parameter S must be a scalar >0'
         assert utils.isnumeric(S),'S must be a numeric scalar'
 
     assert utils.isnumeric(W),'W must be a numeric array'
