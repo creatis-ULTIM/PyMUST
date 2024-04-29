@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-
 setup(name='pymust',
       version='0.1',
       description='Python port of the MUST toolbox for ultrasound signal processing and generation of simulated images.',
