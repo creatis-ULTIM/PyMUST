@@ -82,6 +82,9 @@ def genscat(roidim,meandist,I = None,g = None):
     """
 
     #%-- Check the input arguments
+    if isinstance(roidim, list):
+        roidim = np.array(roidim)
+        
     assert utils.isnumeric(roidim) and isinstance(roidim, np.ndarray), 'The 1st argument must be a numeric vector.'
     assert len(roidim)==2 or len(roidim)==3, 'The 1st argument must be a vector of length 2 or 3.'
     if isinstance(meandist, utils.Param):
