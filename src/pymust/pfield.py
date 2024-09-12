@@ -450,8 +450,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #%------------------------------------%
     #% POINT LOCATIONS, DISTANCES & GRIDS %
     #%------------------------------------%
-
-    siz0 = x.shape
+    if len(x.shape) == 1:
+        siz0 = (x.shape[0], 1)
+    else:
+        siz0 = x.shape
     nx = np.prod(x.shape)
 
     #%-- Coordinates of the points where pressure is needed
@@ -486,7 +488,6 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     tmp = -ElementWidth/2 + SegLength/2 + np.arange(M)*SegLength
     xi = tmp.reshape((1,1,M))*np.cos(THe)[:,:,np.newaxis]
     zi = tmp.reshape((1,1,M))*np.sin(-THe)[:,:,np.newaxis]
-
     #%-- Out-of-field points
     #% Null pressure will be assigned to out-of-field points.
     isOUT = z<0
@@ -504,13 +505,15 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     d2 = dxi**2+(z.reshape((-1,1,1))-zi-ze.reshape((1, -1, 1)))**2
 
     #%---
+    r = np.sqrt(d2+y.reshape((-1,1,1))**2).astype(np.float32)
+    #%---
     #% we'll have 1/sqrt(r) or 1/r:
     #% small d2 values are replaced by (lambda/4)^2
-    smallD2 = (c/fc/4)**2
-    d2[d2<smallD2] = smallD2
-    #%---
-    r = np.sqrt(d2+y.reshape((-1,1,1))**2).astype(np.float32)
-    Th = np.arcsin(dxi/np.sqrt(d2))-THe.reshape((1,-1,1))
+    smallD = (c/fc/2)
+    r[r<smallD] = smallD
+
+    eps_sp = np.finfo(np.float32).eps
+    Th = np.arcsin((dxi +eps_sp)/(np.sqrt(d2)+eps_sp))-THe.reshape((1,-1,1))
     sinT = np.sin(Th)
     # clear dxi d2 Remove if needed for clear memory
     dxi, d2 = None, None # Clear memory if needed
@@ -654,6 +657,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     EXPdf = np.exp((-dkwa + 1j*dkw)*r).astype(np.complex64)
 
     #%-- We replace EXP by EXP.*ObliFac./r or EXP.*ObliFac./sqrt(r)
+
     if ElevationFocusing:
         EXP = EXP*ObliFac/r
         rm = average_over_last_axis(r); 
@@ -686,6 +690,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #% depends on the center frequency ONLY. It is thus not needed to calculate
     #% the directivity array (DIR) in the following for-loop. This directivity
     #% DIR is included in the variable EXP to reduce storage.
+
     if not isFFD:
         kc = 2*np.pi*fc/c # % center wavenumber
         DIR = mysinc(kc*SegLength/2*sinT) # % directivity of each segment
@@ -721,6 +726,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         SPECT = np.zeros((nSampling,nx),dtype=np.complex64)
     EXP = EXP.astype(np.complex64)
     # TODO GB: process several frequencies at the same time might remove some overhead of numpy calls
+
     for k  in range(nSampling):
 
         kw = 2*np.pi*f[k]/c #; % wavenumber

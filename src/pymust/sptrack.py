@@ -340,7 +340,7 @@ def sptrack(I : np.ndarray, param : utils.Param) -> tuple[np.ndarray, np.ndarray
         ROI = scipy.interpolate.interpn((np.arange(N), np.arange(M)),ROI,(i, j),method ='nearest');
         di[np.logical_not(ROI)] = np.nan;
         dj[np.logical_not(ROI)] = np.nan;
-    return di, dj, i, j
+    return dj, di, j, i # Order is swapped to be consistent with Python orientation
 
 def rmnan(x,order):
     # Remove NaNs by inter/extrapolation

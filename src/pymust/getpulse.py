@@ -115,17 +115,24 @@ def getpulse(param: utils.Param, way :int = 2, PreVel : str = 'pressure', dt : f
         F = F / (np.sqrt(f) + eps)
     elif PreVel.lower() in ['vel3d','velocity3d']:
             F = F / (f + eps)
+
+    # Corrected frequencies
+    P = np.abs(F)**2
+    Fc = np.trapz(f*P) / np.trapz(P)
+    f = f + Fc - fc
+
+    F = np.multiply(pulseSpectrum(2 * np.pi * f),probeSpectrum(2 * np.pi * f) ** way)
     
     #-- pulse in the temporal domain (step = 1 ns)
     pulse = np.fft.fftshift(np.fft.irfft(F))
-    pulse = pulse / np.amax(np.abs(pulse))
+    pulse = pulse / np.max(np.abs(pulse))
     #-- keep the significant magnitudes
     idx, = np.where(pulse > (1 / 1023))
     idx1 = idx[0]
     idx2 = idx[-1]
-    idx = min(idx1, 2 * Nf - 1 - idx2)
+    idx = min(idx1 + 1, 2 * Nf - 1 - idx2-1)
     #pulse = pulse[np.arange(end() - idx + 1,idx+- 1,- 1)
-    pulse = pulse[-idx: idx:-1]
+    pulse = pulse[-idx: idx-2:-1]
     #-- time vector
     t = np.arange(len(pulse)) *dt
     return pulse,t
