@@ -52,12 +52,16 @@ def bmode(IQ : np.ndarray, DR: float= 40):
     """
     assert utils.iscomplex(IQ),'IQ must be a complex array'
 
-    assert DR>0,'The dynamic range DR (in dB) must be >0'
-
-
     I = np.abs(IQ) # real envelope
-    I = 20*np.log10(I/np.max(I))+DR
-    I = (255*I/DR) #.astype(np.uint8) # 8-bit log-compressed image
+
+    if (DR >= 1):
+        I = 20*np.log10(I/np.max(I))+DR
+        I = (255*I/DR) #.astype(np.uint8) # 8-bit log-compressed image
+    else:    
+        I = np.power(I / np.max(I), DR)
+        I *= 255
+
     I[I<0] = 0
     I[I>255] = 255
+
     return I.astype(np.uint8)

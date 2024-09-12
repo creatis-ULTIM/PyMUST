@@ -4,10 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyMUST"
-version = "0.1.0"
 authors = [
   {name="Damien Garcia", email="damien.garcia@creatis.insa-lyon.fr"},
-   {name = "Gabriel Bernardino", email = "gabriel.bernardino@upf.edu"},
+  {name = "Gabriel Bernardino", email = "gabriel.bernardino@upf.edu"},
 ]
 description = "Python port of the MUST toolbox for ultrasound signal processing and generation of simulated images"
 readme = "README.md"
@@ -16,9 +15,12 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-dynamic = ["license", "dependencies"]
-
-
+dependencies = [
+  "matplotlib",
+  "numpy",
+  "scipy",
+]
+dynamic = ["license", "version"]
 
 [project.urls]
 Homepage = "https://www.biomecardio.com/MUST"

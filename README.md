@@ -6,6 +6,11 @@ This is a Python reimplementation of the MUST ultrasound toolbox for synthetic i
 As a design decision, we have tried to keep syntax as close as possible with the matlab version, specially regarding the way functions are called. This has resulted in non-pythonic arguments (i.e., overuse of variable number of positional arguments). This allows to make use of Must documentation (https://www.biomecardio.com/MUST/documentation.html). Keep in mind that, since Python does not allow a changing number of returns, each function will output the maximum number of variables of the matlab version.
 
 ## Installation
+### Install from pip
+> pip install pymust
+
+### Download from github
+To install a local version of pymust with its dependencies (matplotlib, scipy, numpy), download it, go to the main folder and then run:
 The package works in OsX, Linux and Windows (but parallelism might not be available on Windows). We recommend installing it in a separate conda environment.
 
 To install pymust with its dependencies (matplotlib, scipy, numpy), you can directly install from pip:

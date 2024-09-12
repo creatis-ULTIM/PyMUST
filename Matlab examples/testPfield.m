@@ -1,48 +1,93 @@
+p = gcp(); % If no pool, do not create new one.
+if isempty(p)
+    poolsize = 0;
+else
+    poolsize = p.NumWorkers
+end
+%%
+I = rgb2gray(imread('heart.jpg'));
+% Pseudorandom distribution of scatterers (depth is 15 cm)
+fc = 2e6;
+[xs,y,zs,RC] = genscat([nan, 15e-2],1540/fc,I);
+
+
 param.fc = 2.7e6;
 param.bandwidth = 76;
 
 param.Nelements = 1;
-
-
-% Description of the geometry of the probe - We will explore this in the next seminar.
-param.radius = inf;
-param.kerf = 3e-05;
-param.width = 0.00027;
-param.pitch = 0.0003;
-param.height = 0.005;
-
-xScatterers = [0];
-zScatterers = [1e-2];
-RCScatterers = [1];
-txdel = [0]';
-
-[RF, RFspec] = simus(xScatterers, zScatterers, RCScatterers,  txdel, param);
 %%
-
 tic
-mean(D, 3);
-toc
-%%
 param = getparam('L11-5v');
+param.attenuation = 0.5;
+OPTIONS.ParPool = true;
+param.fs = 4 * param.fc;
+
+
+L = (param.Nelements-1)*param.pitch;
+param.TXdelay = txdelay(param,deg2rad(10));
+RF= simus(xs,zs,RC,param.TXdelay,param, OPTIONS);
+RF = tgc(RF);
+IQ = rf2iq(RF, param.fs,param.fc);
+
+param.fnumber = [];
+[xi_linear,zi_linear] = impolgrid([100, 100],15e-2,deg2rad(120),param);
+M = dasmtx(IQ,xi_linear,zi_linear,param);
+IQb = M*reshape(IQ,[], 1);
+IQb = reshape(IQb,size(xi_linear));
+
+B_linear = bmode(IQb);
+toc
 tic
-% Define the grid
-x = linspace(-2.5e-2,2.5e-2,150);%# in m
-z = linspace(0,5e-2,150); % in m
-[x,z] = meshgrid(x,z);
-y = [];
-txdel = txdelay(param, 0);
-P = pfield(x,y, z,txdel, param); % Copy the param, since otherwise TXapodization will be changed.
+P_linear = pfield(xi_linear, [], zi_linear, param.TXdelay, param);
+toc
+
+%%
+tic
+param = getparam('P6-3');
+param.attenuation = 0.5;
+OPTIONS.ParPool = true;
+param.fs = 4 * param.fc;
+
+
+L = (param.Nelements-1)*param.pitch;
+param.TXdelay = txdelay(param, -pi/12, pi/3);
+RF= simus(xs,zs,RC,param.TXdelay,param, OPTIONS);
+RF = tgc(RF);
+IQ = rf2iq(RF, param.fs,param.fc);
+
+param.fnumber = [];
+[xi_linear,zi_linear] = impolgrid([200, 200],15e-2,deg2rad(120),param);
+M = dasmtx(IQ,xi_linear,zi_linear,param);
+IQb = M*reshape(IQ,[], 1);
+IQb = reshape(IQb,size(xi_linear));
+
+B_linear = bmode(IQb);
+toc
+tic
+P_linear = pfield(xi_linear, [], zi_linear, param.TXdelay, param);
 toc
 %%
-
-param = getparam('P4-2v')
-xScatterers =[0, .5e-2]
-zScatterers = [1e-2, 3e-2 ]
-RCScatterers =  [1, 1]
-
-activationDelaysTX = txdelay(param, 0)
+tic
+param = getparam('C5-2V');
+param.attenuation = 0.5;
+OPTIONS.ParPool = true;
+param.fs = 4 * param.fc;
 
 
+L = (param.Nelements-1)*param.pitch;
+param.TXdelay = txdelay(param, 0);
+RF= simus(xs,zs,RC,param.TXdelay,param, OPTIONS);
+RF = tgc(RF);
+IQ = rf2iq(RF, param.fs,param.fc);
 
+param.fnumber = [];
+[xi_linear,zi_linear] = impolgrid([200, 100],15e-2, param);
+M = dasmtx(IQ,xi_linear,zi_linear,param);
+IQb = M*reshape(IQ,[], 1);
+IQb = reshape(IQb,size(xi_linear));
 
-RF= simus(xScatterers, zScatterers, RCScatterers,  activationDelaysTX, param);
+B_linear = bmode(IQb);
+toc
+tic
+P_linear = pfield(xi_linear, [], zi_linear, param.TXdelay, param);
+toc

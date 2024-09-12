@@ -44,6 +44,12 @@ class Options(dotdict):
                 'WaitBar'}
         return {n.lower(): n for n in names}
     
+    def setParPool(self, workers, mode = 'process'):
+        if mode not in ['process', 'thread']:
+            raise ValueError('ParPoolMode must be either "process" or "thread"')
+        self.ParPool_NumWorkers = workers
+        self.ParPoolMode = mode
+    
     def getParallelPool(self):
         workers = self.get('ParPool_NumWorkers', self.default_Number_Workers)
         mode = self.get('ParPoolMode', 'thread')
@@ -245,11 +251,13 @@ def fresnelint(x):
 
 
 # Plotting
-def polarplot(x, z, v, cmap = 'gray',background = 'black'):
-    plt.pcolormesh(x, z, v, cmap = cmap)
+def polarplot(x, z, v, cmap = 'gray',background = 'black', probeUpward = True):
+    plt.pcolormesh(x, z, v, cmap = cmap, shading='gouraud')
     plt.axis('equal')
     ax = plt.gca()
     ax.set_facecolor(background)
+    if probeUpward:
+        ax.invert_yaxis()
 
 
 def getDopplerColorMap():
