@@ -429,7 +429,8 @@ def InitialGuess(y,I):
         for i in range(ny):
             _,L = scipy.ndimage.distance_transform_edt(np.logical_not(I), return_indices = True)
             z[i] = y[i]
-            z[i][np.logical_not(I)] = y[i][*L[:,np.logical_not(I)]]; #Use np take
+            #z[i][np.logical_not(I)] = y[i][*L[:,np.logical_not(I)]]; #Use np take
+            z[i][np.logical_not(I)] = np.take(y[i], L[:, np.logical_not(I)])
     else:
         z = y
 
