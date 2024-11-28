@@ -16,7 +16,6 @@ def _get_version_hash():
     return ver.strip()
 
 setup(name='pymust',
-      version='0.1.2',
       description='Python port of the MUST toolbox for ultrasound signal processing and generation of simulated images.',
       author='Gabriel Bernardino (Python port), Damien Garcia (original matlab code)',
       author_email='gabriel.bernardino1@gmail.com',
