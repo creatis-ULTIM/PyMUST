@@ -4,18 +4,18 @@ from distutils.core import setup
 import subprocess
 
 def _get_version_hash():
-  """Talk to git and find out the tag/hash of our latest commit"""
-  try:
+    """Talk to git and find out the tag/hash of our latest commit"""
+    try:
         p = subprocess.Popen(["git", "describe",
-                              "--tags", "--dirty", "--always"],
-                             stdout=subprocess.PIPE)
+                            "--tags", "--dirty", "--always"],
+                            stdout=subprocess.PIPE)
     except EnvironmentError:
         print("Couldn't run git to get a version number for setup.py")
         return
     ver = p.communicate()[0]
     return ver.strip()
 
-setup(name='pymust',
+setup(name='pymust',   ver = p.com
       description='Python port of the MUST toolbox for ultrasound signal processing and generation of simulated images.',
       author='Gabriel Bernardino (Python port), Damien Garcia (original matlab code)',
       author_email='gabriel.bernardino1@gmail.com',
