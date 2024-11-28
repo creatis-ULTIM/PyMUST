@@ -13,6 +13,8 @@ def _get_version_hash():
         print("Couldn't run git to get a version number for setup.py")
         return
     ver = p.communicate()[0]
+    if isinstance(ver, bytes):
+        ver = ver.decode('ascii')
     return ver.strip()
 
 setup(name='pymust',
