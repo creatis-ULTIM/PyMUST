@@ -457,9 +457,9 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     nx = np.prod(x.shape)
 
     #%-- Coordinates of the points where pressure is needed
-    x = x.reshape((-1,1))
-    y = y.reshape((-1,1)) # Check if y is empty
-    z = z.reshape((-1,1))
+    x = x.reshape((-1,1), order = 'F')
+    y = y.reshape((-1,1), order = 'F') # Check if y is empty
+    z = z.reshape((-1,1), order = 'F')
 
     if isMKMOVIE:
         x = np.concatenate((x, np.array(options.x).reshape((-1,1))))
@@ -551,7 +551,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         df = 1/(np.max(r/c) + np.max(delaysTX))
         df = options.FrequencyStep*df
         #% note: df is here an upper bound; it will be recalculated below
-
+        param.df = df
 
     #%-- FREQUENCY SAMPLES
     Nf = int(2*np.ceil(param.fc/df)+1) # number of frequency samples
@@ -578,7 +578,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     P = np.abs(F)**2; #% power
     Fc = np.trapz(f*P)/np.trapz(P)
     # corrected frequencies
-    f = f+Fc-fc
+    #f = f+Fc-fc
 
     #%-- For MKMOVIE only: IDX is required in MKMOVIE
     if isMKMOVIE and x is None:
@@ -827,7 +827,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         else:  #% using PFIELD alone
             RP = RP + abs(RPk)**2; #% acoustic intensity
 
-            SPECT[k,:] = RPk.flatten()
+            SPECT[k,:] = RPk.flatten(order = 'F')
         
         
         # USE TQDM INSTEAD
@@ -867,7 +867,8 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #% RMS acoustic pressure (if we are in PFIELD only)
     if not (isSIMUS or isMKMOVIE):
         RP =np.sqrt(RP).reshape(siz0)
-        SPECT = SPECT.reshape([siz0[0], siz0[1], nSampling])
+        SPECT = np.swapaxes(SPECT, 0, 1)
+        SPECT = SPECT.reshape([siz0[0], siz0[1], nSampling], order = 'F')
     return RP, SPECT, IDX
 
 
