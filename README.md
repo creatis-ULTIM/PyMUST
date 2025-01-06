@@ -39,16 +39,17 @@ If there is a functionality that you would like to see, please open an issue.
 
 ## Citation
 If you use this library for your research, please cite:
-- [G. Bernardino,  D. Garcia, (2024). "PyMUST: an open-Source Python Library for the Simulation and Analysis of Ultrasound."  2024 IEEE Ultrasonics, Ferroelectrics, and Frequency Control Joint Symposium (UFFC-JS)] (https://doi.org/10.1109/uffc-js60046.2024.10793881](https://ieeexplore.ieee.org/document/10793881)
+- [G. Bernardino,  D. Garcia, (2024). "PyMUST: an open-Source Python Library for the Simulation and Analysis of Ultrasound."  2024 IEEE Ultrasonics, Ferroelectrics, and Frequency Control Joint Symposium](https://doi.org/10.1109/uffc-js60046.2024.10793881](https://ieeexplore.ieee.org/document/10793881)
 - [D. Garcia, "Make the most of MUST, an open-source MATLAB UltraSound Toolbox", 2021 IEEE International Ultrasonics Symposium (IUS), 2021, pp. 1-4, doi: 10.1109/IUS52206.2021.9593605](https://www.biomecardio.com/publis/ius21.pdf)
 - [D. Garcia, "SIMUS: an open-source simulator for medical ultrasound imaging. Part I: theory & examples", Computer Methods and Programs in Biomedicine, 218, 2022, p. 106726, doi: 10.1016/j.cmpb.2022.106726](https://www.biomecardio.com/publis/cmpb22.pdf)
 - [A. Cigier, F. Varray and D. Garcia "SIMUS: an open-source simulator for medical ultrasound imaging. Part II: comparison with four simulators," Computer Methods and Programs in Biomedicine, 218, 2022, p. 106726, doi: 10.1016/j.cmpb.2022.106726.](www.biomecardio.com/publis/cmpb22a.pdf)
   
-If you use the speckle tracking functionality:
+If you use the speckle tracking:
 - [V. Perrot and D. Garcia, "Back to basics in ultrasound velocimetry: tracking speckles by using a standard PIV algorithm", 2018 IEEE International Ultrasonics Symposium (IUS), 2018, pp. 206-212, doi: 10.1109/ULTSYM.2018.8579665](https://www.biomecardio.com/publis/ius18.pdf)
 
-If you use  beamforming:
+If you use beamforming:
 - [V. Perrot, M. Polichetti, F. Varray and D. Garcia, "So you think you can DAS? A viewpoint on delay-and-sum beamforming," 'Ultrasonics, 111, 2021, p. 106309, doi: 10.1016/j.ultras.2020.106309] (https://www.biomecardio.com/publis/ultrasonics21.pdf)
+
 If you use vector flow:
 - [C. Madiena, J. Faurie, J. Porée and D. Garcia "Color and vector flow imaging in parallel ultrasound with sub-Nyquist sampling," IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control 65, 2018, pp. 795-802 10.1109/TUFFC.2018.2817885](https://hal.science/hal-01988025/)
 
