@@ -78,7 +78,7 @@ def wfilt(SIG :np.ndarray, method : str, n: int) -> np.ndarray :
         #% DISCRETE COSINE TRANSFORM WALL FILTER
         #% -------------------------------------
         
-        assert n>0, "N must be >0 with the ''dct'' method."
+        assert n>0, 'N must be >0 with the "dct" method.'
         assert N>=n,'The packet length must be >=N.'
         
         #% If the degree is 0, the mean is removed.
@@ -95,7 +95,7 @@ def wfilt(SIG :np.ndarray, method : str, n: int) -> np.ndarray :
         #% SINGULAR VALUE DECOMPOSITION WALL FILTER
         #% ----------------------------------------
         
-        assert n>0,'N must be >0 with the ''svd'' method.'
+        assert n>0,'N must be >0 with the "svd" method.'
         assert N>=n,'The packet length must be >=N.'
         
         #% Each column represents a column-rearranged frame.
@@ -105,6 +105,6 @@ def wfilt(SIG :np.ndarray, method : str, n: int) -> np.ndarray :
         SIG = U[:,n:N] @ S[n:N,n:N] @V[:,n:N].T; # high-pass filtering
         SIG = SIG.reshape(siz0)        
     else:
-        raise ValueError("METHOD must be ''poly'', ''dct'', or ''svd''.")
+        raise ValueError('METHOD must be "poly", "dct", or "svd".')
 
     return SIG
