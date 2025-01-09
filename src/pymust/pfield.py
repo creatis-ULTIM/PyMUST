@@ -322,10 +322,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     elif param.baffle == 'soft':
         NonRigidBaffle = True
     elif np.isscalar(param.baffle):
-        assert param.baffle>0, 'The ''baffle'' field scalar must be positive'
+        assert param.baffle>0, 'The "baffle" field scalar must be positive'
         NonRigidBaffle = True
     else:
-        raise ValueError('The ''baffle'' field must be ''rigid'',''soft'' or a positive scalar')
+        raise ValueError('The "baffle" field must be "rigid","soft" or a positive scalar')
 
     #%-- 9) Longitudinal velocity (in m/s)
     if  'c' not in param:
