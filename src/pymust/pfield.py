@@ -563,7 +563,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     GdB = 20*np.log10(1e-200 + S/np.max(S))# % gain in dB
     id = np.where(GdB >options.dBThresh)
     IDX = np.zeros(f.shape) != 0.
-    IDX[id[0][0]:id[0][-1]] = True
+    IDX[id[0][0]:id[0][-1]+1] = True
 
     f = f[IDX]
     nSampling = len(f)
