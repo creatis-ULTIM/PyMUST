@@ -508,7 +508,8 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     r = np.sqrt(d2+y.reshape((-1,1,1))**2).astype(np.float32)
     #%---
     #% we'll have 1/sqrt(r) or 1/r:
-    #% small d2 values are replaced by (lambda/4)^2
+    #% small d2 values are replaced by lambda/2
+    #% lambda = c/fc; smallD = lambda/2;
     smallD = (c/fc/2)
     r[r<smallD] = smallD
 
