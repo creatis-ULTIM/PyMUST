@@ -431,6 +431,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
 
     assert np.isscalar(options.FrequencyStep) and utils.isnumeric(options.FrequencyStep) and options.FrequencyStep>0, 'OPTIONS.FrequencyStep must be a positive scalar.'
 
+    # DR: Possibly add explanation of casting RC to single precision
+    if options.RC is not None and len(options.RC):
+        options.RC = options.RC.astype(np.float32)
+    
     #%------------------------------------%
     #% END of Check the OPTIONS structure %
     #%------------------------------------%
@@ -664,8 +668,6 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     else:
         EXP = EXP*ObliFac/np.sqrt(r)
 
-    if options.RC is not None and len(options.RC):
-        options.RC = options.RC.astype(np.float32)
     #clear ObliFac r
 
     #%-- TX apodization
