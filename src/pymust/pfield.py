@@ -619,7 +619,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
         SPECT = np.zeros((nSampling, NumberOfElements), dtype = np.complex64)
     else:
         #%- For MKMOVIE only (we need the full spectrum of the pressure field):
-        #%- For using PFIELD alone we need the spectrum on each point # DR: Check this explanation
+        #%- For using PFIELD alone we need the spectrum recieved on each point:
         SPECT = np.zeros((nSampling, nx), dtype = np.complex64)
 
     #%-- Obliquity factor (baffle property)
