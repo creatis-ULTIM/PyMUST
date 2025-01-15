@@ -116,10 +116,10 @@ def getpulse(param: utils.Param, way :int = 2, PreVel : str = 'pressure', dt : f
     elif PreVel.lower() in ['vel3d','velocity3d']:
             F = F / (f + eps)
 
-    # Corrected frequencies
-    P = np.abs(F)**2
-    Fc = np.trapz(f*P) / np.trapz(P)
-    f = f + Fc - fc
+    # Corrected frequencies % (added on April 24, 2023 ; removed on Nov 8, 2023) on MUST
+    # P = np.abs(F)**2
+    # Fc = np.trapz(f*P) / np.trapz(P)
+    # f = f + Fc - fc
 
     F = np.multiply(pulseSpectrum(2 * np.pi * f),probeSpectrum(2 * np.pi * f) ** way)
     
