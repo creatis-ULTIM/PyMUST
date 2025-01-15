@@ -573,16 +573,16 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     nSampling = len(f)
 
 
-    #-- Frequency correction (added on April 24, 2023)
+    #-- Frequency correction (added on April 24, 2023; removed on Nov 8, 2023) on MUST
     #   Note: The frequencies are shifted such that the center frequency for a
     #         a pulse-echo is exactly PARAM.fc.
     # pulse-echo spectrum
-    F = pulseSpectrum(2*np.pi*f)*probeSpectrum(2*np.pi*f)**2;
+    # F = pulseSpectrum(2*np.pi*f)*probeSpectrum(2*np.pi*f)**2
     # predicted center frequency
-    P = np.abs(F)**2; #% power
-    Fc = np.trapz(f*P)/np.trapz(P)
+    # P = np.abs(F)**2; #% power
+    # Fc = np.trapz(f*P)/np.trapz(P)
     # corrected frequencies
-    #f = f+Fc-fc
+    # f = f+Fc-fc
 
     #%-- For MKMOVIE only: IDX is required in MKMOVIE
     if isMKMOVIE and x is None:
