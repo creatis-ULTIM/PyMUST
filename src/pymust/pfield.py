@@ -621,12 +621,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     if isSIMUS:
         #%- For SIMUS only (we need the full spectrum of RX signals):
         SPECT = np.zeros((nSampling, NumberOfElements), dtype = np.complex64)
-    elif isMKMOVIE:
+    else:
         #%- For MKMOVIE only (we need the full spectrum of the pressure field):
+        #%- For using PFIELD alone we need the spectrum recieved on each point:
         SPECT = np.zeros((nSampling, nx), dtype = np.complex64)
-    #elseif nargout==3
-    #    SPECT = zeros([nSampling nx],'like',single(1i));
-    #end
 
     #%-- Obliquity factor (baffle property)
     #%   An obliquity factor is required if the baffle is not rigid.
@@ -722,10 +720,6 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #%-----------------------------%
     #% SUMMATION OVER THE SPECTRUM %
     #%-----------------------------%
-    if isSIMUS:
-        SPECT = np.zeros((nSampling, NumberOfElements),dtype=np.complex64)
-    else:
-        SPECT = np.zeros((nSampling,nx),dtype=np.complex64)
     EXP = EXP.astype(np.complex64)
     # TODO GB: process several frequencies at the same time might remove some overhead of numpy calls
 
