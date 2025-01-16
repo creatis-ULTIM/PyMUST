@@ -1,4 +1,5 @@
 import logging
+from __future__ import annotations
 from . import utils, smoothn
 import numpy as np, scipy
 
