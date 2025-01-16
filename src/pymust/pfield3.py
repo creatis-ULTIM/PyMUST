@@ -522,7 +522,6 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
 
     #-- FREQUENCY SAMPLES
     Nf = int(2*np.ceil(param.fc/df)+1) # number of frequency samples
-    print(f"{Nf = }")
     f = np.linspace(0,2*param.fc,Nf) # frequency samples
     df = f[1]  # update the frequency step
     #-- we keep the significant components only by using options.dBThresh
@@ -535,7 +534,6 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
 
     f = f[IDX]
     nSampling = len(f)
-    print(f"{nSampling = }")
 
     #-- Frequency correction (added on April 24, 2023, removed on Nov 8, 2023) on MUST
     #   Note: The frequencies are shifted such that the center frequency for a
