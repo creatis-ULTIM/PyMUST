@@ -322,10 +322,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     elif param.baffle == 'soft':
         NonRigidBaffle = True
     elif np.isscalar(param.baffle):
-        assert param.baffle>0, 'The ''baffle'' field scalar must be positive'
+        assert param.baffle>0, 'The "baffle" field scalar must be positive'
         NonRigidBaffle = True
     else:
-        raise ValueError('The ''baffle'' field must be ''rigid'',''soft'' or a positive scalar')
+        raise ValueError('The "baffle" field must be "rigid","soft" or a positive scalar')
 
     #%-- 9) Longitudinal velocity (in m/s)
     if  'c' not in param:
@@ -431,6 +431,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
 
     assert np.isscalar(options.FrequencyStep) and utils.isnumeric(options.FrequencyStep) and options.FrequencyStep>0, 'OPTIONS.FrequencyStep must be a positive scalar.'
 
+    # DR: Possibly add explanation of casting RC to single precision
+    if options.RC is not None and len(options.RC):
+        options.RC = options.RC.astype(np.float32)
+    
     #%------------------------------------%
     #% END of Check the OPTIONS structure %
     #%------------------------------------%
@@ -508,7 +512,8 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     r = np.sqrt(d2+y.reshape((-1,1,1))**2).astype(np.float32)
     #%---
     #% we'll have 1/sqrt(r) or 1/r:
-    #% small d2 values are replaced by (lambda/4)^2
+    #% small d2 values are replaced by lambda/2
+    #% lambda = c/fc; smallD = lambda/2;
     smallD = (c/fc/2)
     r[r<smallD] = smallD
 
@@ -563,22 +568,22 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     GdB = 20*np.log10(1e-200 + S/np.max(S))# % gain in dB
     id = np.where(GdB >options.dBThresh)
     IDX = np.zeros(f.shape) != 0.
-    IDX[id[0][0]:id[0][-1]] = True
+    IDX[id[0][0]:id[0][-1]+1] = True
 
     f = f[IDX]
     nSampling = len(f)
 
 
-    #-- Frequency correction (added on April 24, 2023)
+    #-- Frequency correction (added on April 24, 2023; removed on Nov 8, 2023) on MUST
     #   Note: The frequencies are shifted such that the center frequency for a
     #         a pulse-echo is exactly PARAM.fc.
     # pulse-echo spectrum
-    F = pulseSpectrum(2*np.pi*f)*probeSpectrum(2*np.pi*f)**2;
+    # F = pulseSpectrum(2*np.pi*f)*probeSpectrum(2*np.pi*f)**2
     # predicted center frequency
-    P = np.abs(F)**2; #% power
-    Fc = np.trapz(f*P)/np.trapz(P)
+    # P = np.abs(F)**2; #% power
+    # Fc = np.trapz(f*P)/np.trapz(P)
     # corrected frequencies
-    #f = f+Fc-fc
+    # f = f+Fc-fc
 
     #%-- For MKMOVIE only: IDX is required in MKMOVIE
     if isMKMOVIE and x is None:
@@ -617,12 +622,10 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     if isSIMUS:
         #%- For SIMUS only (we need the full spectrum of RX signals):
         SPECT = np.zeros((nSampling, NumberOfElements), dtype = np.complex64)
-    elif isMKMOVIE:
+    else:
         #%- For MKMOVIE only (we need the full spectrum of the pressure field):
+        #%- For using PFIELD alone we need the spectrum recieved on each point:
         SPECT = np.zeros((nSampling, nx), dtype = np.complex64)
-    #elseif nargout==3
-    #    SPECT = zeros([nSampling nx],'like',single(1i));
-    #end
 
     #%-- Obliquity factor (baffle property)
     #%   An obliquity factor is required if the baffle is not rigid.
@@ -664,8 +667,6 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     else:
         EXP = EXP*ObliFac/np.sqrt(r)
 
-    if options.RC is not None and len(options.RC):
-        options.RC = options.RC.astype(np.float32)
     #clear ObliFac r
 
     #%-- TX apodization
@@ -720,10 +721,6 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
     #%-----------------------------%
     #% SUMMATION OVER THE SPECTRUM %
     #%-----------------------------%
-    if isSIMUS:
-        SPECT = np.zeros((nSampling, NumberOfElements),dtype=np.complex64)
-    else:
-        SPECT = np.zeros((nSampling,nx),dtype=np.complex64)
     EXP = EXP.astype(np.complex64)
     # TODO GB: process several frequencies at the same time might remove some overhead of numpy calls
 

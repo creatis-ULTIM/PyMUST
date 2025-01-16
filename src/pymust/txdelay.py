@@ -204,7 +204,7 @@ def txdelay(*args):
             delays = -delays
     #%-----
     elif option == 'Circular Wave':
-        assert isLINEAR,'The syntax ''TXDELAY(PARAM,TILT,WIDTH)is not available for a convex array.'
+        assert isLINEAR,'The syntax "TXDELAY(PARAM,TILT,WIDTH)" is not available for a convex array.'
         tilt = np.array(args[1]).reshape((-1, 1))
         width = np.array(args[2]).reshape((-1, 1))
         assert tilt.shape == width.shape, 'TILT and WIDTH must have the same length.'

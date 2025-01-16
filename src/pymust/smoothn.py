@@ -169,7 +169,7 @@ def smoothn(y : np.ndarray,
     #%---
     # "Weight function" criterion (for robust smoothing)
     Weight = Weight.lower()
-    assert Weight in ['bisquare','talworth','cauchy'], 'The weight function must be ''bisquare'', ''cauchy'' or '' talworth''.'
+    assert Weight in ['bisquare','talworth','cauchy'], 'The weight function must be "bisquare", "cauchy" or " talworth".'
     
     #---
     # "Order" criterion (by default m = 2)

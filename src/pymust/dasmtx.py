@@ -234,7 +234,7 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
 
     #%-- Interpolation method
     if method.lower() not in ['nearest','linear','quadratic','lanczos3','5points','lanczos5']:
-        raise ValueError('METHOD must be ''nearest'', ''linear'', ''quadratic'', ''Lanczos3'', ''5points'' or ''Lanczos5''.')
+        raise ValueError('METHOD must be "nearest", "linear", "quadratic", "Lanczos3", "5points" or "Lanczos5".')
 
 
     #%-- Propagation velocity (in m/s)
