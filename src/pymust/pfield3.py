@@ -383,7 +383,7 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
         assert len(options.ElementSplitting) == 2, 'OPTIONS.ElementSplitting must be a two-element vector.'
         M = int(options.ElementSplitting[0])
         N = int(options.ElementSplitting[1])
-        assert np.isscalar(M) and M==np.round(M) and M>0 and np.isscalar(N) and M==np.round(N) and N>0, 'OPTIONS.ElementSplitting must contain two positive integers.'
+        assert np.isscalar(M) and M==np.round(M) and M>0 and np.isscalar(N) and N==np.round(N) and N>0, 'OPTIONS.ElementSplitting must contain two positive integers.'
     else:
         LambdaMin = c/(fc*(1+param.bandwidth/200))
         M = int(np.ceil(ElementWidth/LambdaMin))
