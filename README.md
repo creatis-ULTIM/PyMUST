@@ -31,7 +31,6 @@ In the folder "examples", you have python notebooks ilustrating the main functio
 
 ## Next steps
 If there is a functionality that you would like to see, please open an issue.
-- Port of 3D reconstruction and simulation.
 - Update function documentation.
 - Find computational bottlenecks, and optimise (possibly with C extensions).
 - GPU acceleration
