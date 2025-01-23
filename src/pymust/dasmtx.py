@@ -1,4 +1,6 @@
 import numpy as np
+import scipy.optimize, itertools 
+
 import scipy, scipy.interpolate
 from . import  utils
 
@@ -439,10 +441,56 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
     #% For a given location [x(k),z(k)], one has:
     #% dTX(k) = min(delaysTXi*c + sqrt((xTi-x(k)).^2 + (zTi-z(k)).^2));
     #% In a compact matrix form, this yields:
-    if not param.passive:
-        dTX = np.min(delaysTXi*c + np.sqrt((xTi-x)**2 + (zTi-z)**2), 1).reshape((-1,1))
-    else:
+    if param.passive:
         dTX = np.zeros_like(x)
+    else:
+        # OLD version of computing the transmission delays
+        #% For a given location [x(k),z(k)], one has:
+        #% dTX(k) = min(delaysTXi*c + sqrt((xTi-x(k)).^2 + (zTi-z(k)).^2));
+        #% In a compact matrix form, this yields:
+        #dTX = np.min(delaysTXi*c + np.sqrt((xTi-x)**2 + (zTi-z)**2), 1).reshape((-1,1))
+
+        WasTransmitting = np.logical_not(np.isnan(delaysTX))
+        assert np.sum(np.abs(np.diff(WasTransmitting)))<3, 'Multiple transmitting sub-apertures are not allowed during beamforming.'
+        nTX = np.count_nonzero(WasTransmitting); # number of transmitting elements
+
+
+        #-- TX distances
+        if nTX==1:
+            # Only one element was active
+            dTX = np.hypot(xe[WasTransmitting][0]-x,ze[WasTransmitting][0]-z) + delaysTX[WasTransmitting][0]*c
+
+        elif nTX<3:
+            raise ValueError('If not 1, the number of neighboring transmitting elements must be at least 3.')
+        
+        else:
+            #-- We create a virtual transducer to calculate the TX distances.
+            xv,zv = vxdcr(xe[WasTransmitting],ze[WasTransmitting], delaysTX[WasTransmitting],c);
+            dzv = diff2(xv,zv)
+
+            # Distances between the (x,z) points and the lines normal to the
+            # virtual transducer at (xv,zv)
+            Dn = np.abs(x-xv + dzv*(z-zv))/np.hypot(1,dzv);
+            # idx contains the element numbers that give the smallest Dn_s
+            idx = np.argmin(Dn,1)
+            
+            InterpMethod = 'nearest';
+
+            if InterpMethod == 'nearest':
+                dTX = np.hypot(xv[idx].reshape((-1,1)) - x, zv[idx].reshape((-1,1))  -z)
+            elif InterpMethod == 'parabolic':
+                N = x.size
+                dTX = np.hypot(xv.reshape((1,-1))-x,zv.reshape((1,-1))-z);
+                dTX[:,1:nc] = scipy.signal.convolve2d(dTX, np.array([1, 0, 1]).reshape((1,-1)),'valid')/2 - \
+                    scipy.signal.convolve2d(dTX,np.array([1, 0, -1]).reshape((1,-1)),'valid')* \
+                    scipy.signal.convolve2d(Dn,np.array([1, 0, -1]).reshape((1,-1)),'valid')/ \
+                scipy.signal.convolve2d(Dn,np.array([2, -4, 2]).reshape((1,-1)),'valid')
+
+                dTX = dTX.flatten()
+                dTX = dTX[np.arange(N) + idx *N ]
+            else:
+                raise ValueError("Incorrect interpolation method on dTX. Valid options: [nearest | parabolic]")
+
 
 
     #%-- RX distances
@@ -588,4 +636,65 @@ class DasMTX:
         return (self.M @ SIG.flatten(order = 'F')).reshape(self.shape, order = 'F')
 
 
-    
+# Function to calculate the first derivative of y with respect to x using a second-order difference method
+def diff2(x, y):
+    m = len(y)
+    dx = np.diff(x)
+    dy = np.zeros_like(y)
+
+    # y'(x_1)
+    dy[0] = (1 / dx[0] + 1 / dx[1]) * (y[1] - y[0]) + dx[0] / (dx[0] * dx[1] + dx[1]**2) * (y[0] - y[2])
+
+    # y'(x_m)
+    dy[-1] = (1 / dx[-2] + 1 / dx[-1]) * (y[-1] - y[-2]) + dx[-1] / (dx[-1] * dx[-2] + dx[-2]**2) * (y[-3] - y[-1])
+
+    # y'(x_i) (i > 1 & i < m)
+    dx1 = dx[:-1]
+    dx2 = dx[1:]
+    y1 = y[:-2]
+    y2 = y[1:-1]
+    y3 = y[2:]
+    dy[1:-1] = 1 / (dx1 * dx2 * (dx1 + dx2)) * (-dx2**2 * y1 + (dx2**2 - dx1**2) * y2 + dx1**2 * y3)
+
+    return dy
+
+def vxdcr(xe, ze, delaysTX, c):
+    # Virtual transducer (XDCR)
+    T2 = delaysTX**2
+    dT2dxe = diff2(xe, T2)
+    err = np.min(np.diff(xe)) * 1e-3
+    dzedxe = diff2(xe, ze)
+
+    # Virtual transducer positions
+    if np.all(ze == 0):
+        # For a linear transducer
+        xV = xe - 0.5 * c**2 * dT2dxe
+        zV = -np.sqrt(np.abs(c**2 * T2 - (xV - xe)**2))
+    else:
+        # For a convex array
+        xV = xe.copy()
+        tmp = np.sqrt(np.abs(c**2 * T2 - (xV - xe)**2))
+
+        def myfun(xv, k):
+            return (xe[k] - xv) + tmp[k] * dzedxe[k] - 0.5 * c**2 * dT2dxe[k]
+
+        for k in range(len(xV)):
+            xV[k] = scipy.optimize.fsolve(myfun, xV[k], args=(k,), xtol=err)[0]
+        zV = ze - tmp
+
+    # Validate the virtual transducer
+    test = np.all(np.diff(xV) > 0) and np.all((c**2 * T2 - (xV - xe)**2) > -err)
+    if not test:
+        raise ValueError("The delays do not allow a virtual transducer to be calculated.")
+
+    # Check if the virtual transducer is convex or concave
+    idx = np.array([list(i) for i in itertools.combinations(range(len(xV)), 3)])
+    lambda_vals = (xV[idx[:, 2]] - xV[idx[:, 1]]) / (xV[idx[:, 0]] - xV[idx[:, 1]])
+    alst1 = np.abs(lambda_vals) < 1
+    tmp = zV[idx[alst1, 2]] - (lambda_vals[alst1] * zV[idx[alst1, 0]] + (1 - lambda_vals[alst1]) * zV[idx[alst1, 1]])
+    test = max(np.count_nonzero(tmp > -np.finfo(float).eps),
+               np.count_nonzero(tmp < np.finfo(float).eps)) / len(tmp) > 0.999
+    if not test:
+        print("Warning: The virtual transducer is not convex or concave.")
+
+    return xV, zV

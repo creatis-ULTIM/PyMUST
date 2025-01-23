@@ -863,7 +863,7 @@ def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, 
 
     #% RMS acoustic pressure (if we are in PFIELD only)
     if not (isSIMUS or isMKMOVIE):
-        RP =np.sqrt(RP).reshape(siz0)
+        RP =np.sqrt(RP).reshape(siz0, order = 'F')
         SPECT = np.swapaxes(SPECT, 0, 1)
         SPECT = SPECT.reshape([siz0[0], siz0[1], nSampling], order = 'F')
     return RP, SPECT, IDX
