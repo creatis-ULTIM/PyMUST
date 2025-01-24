@@ -514,7 +514,7 @@ def  vxdcr3(xe,ye,delaysTX,c):
     %
     %   -- Damien Garcia -- 2024/06, last update: 2024/06/26
     %                                [simplified version]
-    """"
+    """
     T2 = delaysTX.flatten(order = "F")**2
     xe = xe.flatten(order = 'F')
     ye = ye.flatten(order = 'F')
