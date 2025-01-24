@@ -1,6 +1,7 @@
+from __future__ import annotations
 import numpy as np,scipy, scipy.signal, typing
 from . import utils
-def iq2doppler(IQ:np.ndarray, param: utils.Param, M: typing.Union[int,np.ndarray ]= 1,lag :int=1):
+def iq2doppler(IQ:np.ndarray, param: utils.Param, M: typing.Union[int,np.ndarray ]= 1,lag :int=1) -> tuple[np.ndarray, np.ndarray]:
     """
     %IQ2DOPPLER   Convert I/Q data to color Doppler
     %   VD = IQ2DOPPLER(IQ,PARAM) returns the Doppler velocities from the I/Q

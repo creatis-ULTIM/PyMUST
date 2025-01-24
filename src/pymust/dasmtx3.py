@@ -2,7 +2,7 @@ import numpy as np
 import scipy, scipy.interpolate
 from . import  utils
 
-def dasmtx3(SIG : np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *varargin):
+def dasmtx3(SIG : np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *varargin) -> scipy.sparse.spmatrix:
     """
     DASMTX3   Delay-and-sum matrix for 3-D imaging with a matrix array
     M = DASMTX3(SIG,X,Y,Z,DELAYS,PARAM) returns the numel(X)-by-numel(SIG)
@@ -142,7 +142,6 @@ def dasmtx3(SIG : np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *vara
     else:
         nl,nc = SIG.shape[0], SIG.shape[1]
 
-
     # check if we have I/Q signals
     isIQ = utils.iscomplex(SIG)
 
@@ -231,6 +230,13 @@ def dasmtx3(SIG : np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *vara
         param.passive = False
     else:
         assert utils.islogical(param.passive), 'PARAM.passive must be a boolean (false or true)'
+
+    # NoteGB: Temporary, while checking the code of virtual sources in the DAS matrix
+    if not utils.isfield(param,'useVirtualSource'):
+        useVirtualSource = False
+    else:
+        useVirtualSource = param.useVirtualSource
+
 
 
     #-- Coordinates of the transducer elements (xe,ye,ze)
@@ -337,10 +343,38 @@ def dasmtx3(SIG : np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *vara
     dxT = x-xe; dyT = y-ye; dzT = z-ze
     dRX = np.sqrt(dxT**2 + dyT**2 + dzT**2)
     
-    if not param.passive:
+    if  param.passive:
+        dTX = np.zeros_like(x)
+    elif not useVirtualSource:
         dTX = np.min(delaysTX*c + dRX, axis = 1).reshape((-1,1), order = 'F')
     else:
-        dTX = np.zeros_like(x)
+        #%-- First check which elements were transmitting
+        WasTransmitting = np.logical_not(np.isnan(delaysTX))
+        nTX = np.count_nonzero(WasTransmitting); # number of transmitting elements
+
+        #%-- TX distances
+        if nTX==1:
+            #% Only one element was active
+            dTX = np.hypot(xe[WasTransmitting]-x,ze[WasTransmitting]-z) + \
+                delaysTX[WasTransmitting]*c;
+
+        elif nTX<3:
+            raise ValueError('If not 1, the number of transmitting elements must be at least 3.')
+
+        else:
+            #%-- We create a virtual transducer to calculate the TX distances.
+            xv,yv,zv = vxdcr3(xe[WasTransmitting],ye[WasTransmitting], \
+                delaysTX[WasTransmitting],c);
+
+            [DzvDx,DzvDy] = trigrad(xv,yv,zv);
+
+            # Distances between the (x,y,z) points and the lines normal to the
+            # virtual transducer at (xv,yv,zv)
+            Dn = np.abs(DzvDx*(y-yv) + DzvDy*(z-zv) - (x-xv))/np.abs(1+DzvDx**2+DzvDy**2);
+            #idx contains the element numbers that give the smallest Dn_s
+            idx = np.argmin(Dn, 1)
+
+            dTX = np.sqrt((xv[idx].reshape((-1,1))-x)**2 + (yv[idx].reshape((-1,1))-y)**2 + (zv[idx].reshape((-1,1))-z)**2);
 
     x,y,z = None, None, None # clear x y z
  
@@ -468,3 +502,94 @@ class DasMTX3:
     def __apply__(self, SIG, axis):
         return (self.M @ SIG.flatten(order = 'F')).reshape(self.shape, order = 'F')
     
+
+def  vxdcr3(xe,ye,delaysTX,c):
+    """
+    %VXDCR3   3-D virtual transducer (XDCR)
+    %   [xV,zV,zV] = VXDCR3 returns the positions of the elements of the 3-D
+    %   virtual transducer.
+    %
+    %   The virtual transducer is an "equivalent" transducer assuming null
+    %   delays.
+    %
+    %   -- Damien Garcia -- 2024/06, last update: 2024/06/26
+    %                                [simplified version]
+    """"
+    T2 = delaysTX.flatten(order = "F")**2
+    xe = xe.flatten(order = 'F')
+    ye = ye.flatten(order = 'F')
+    dT2dx,dT2dy = trigrad(xe,ye,T2);
+    xV = xe-c**22*dT2dx/2;
+    yV = ye-c**2*dT2dy/2;
+    zV = -np.sqrt(np.abs(c**2*T2-(xe-xV)**2-(ye-yV)**2));
+    return xV,yV,zV
+
+def trigrad(x : np.ndarray, y : np.ndarray, z : np.ndarray):
+    """
+    Compute an approximation to the gradient of Z defined for scattered data (X, Y).
+
+    Parameters:
+    x, y, z : array-like
+        Coordinates and corresponding function values. All must have the same shape.
+
+    Returns:
+    dzdx, dzdy : ndarray
+        Approximations to the partial derivatives dZ/dX and dZ/dY.
+    """
+    siz0 = x.shape
+
+    x = np.asarray(x).flatten(order = 'F')
+    y = np.asarray(y).flatten(order = 'F')
+    z = np.asarray(z).flatten(order = 'F')
+
+    assert x.shape == y.shape == z.shape, "X, Y, and Z must have the same size"
+
+
+    # Delaunay triangulation
+    tri = scipy.spatial.Delaunay(np.vstack((x, y)).T , qhull_options = 'Qt Qbb Qc') # To make it consistent with Matlab (https://stackoverflow.com/questions/36604172/difference-between-matlab-delaunayn-and-scipy-delaunay)
+    dt = tri.simplices
+
+    # Number of triangles and points
+    nt = dt.shape[0]
+    np_points = len(z)
+
+    # Coefficients for the planes (triangles)
+    # [x1 y1 1; x2 y2 1; x3 y3 1][a; b; c] = [z1; z2; z3]
+
+    vals = np.vstack([np.take(x, dt).flatten(), np.take(y, dt).flatten(), np.ones(3*nt) ]).T
+    rows =  np.repeat(np.arange(3*nt).reshape((-1, 1), order = 'F'), 3, axis = 1)
+    cols = np.kron(np.arange(3*nt).reshape(3, nt, order = 'F') , np.ones((1,3), dtype = int)).T
+    Cm =scipy.sparse.coo_matrix((vals.flatten(order = 'F'), (rows.flatten(order = 'F'), cols.flatten(order = 'F')))).tocsr()
+    C = scipy.sparse.linalg.spsolve(Cm, np.take(z, dt).flatten() ).reshape((-1, 3))
+
+    # Side lengths of the triangles
+    s1 = np.hypot(x[dt[:, 1]] - x[dt[:, 0]], y[dt[:, 1]] - y[dt[:, 0]])
+    s2 = np.hypot(x[dt[:, 2]] - x[dt[:, 0]], y[dt[:, 2]] - y[dt[:, 0]])
+    s3 = np.hypot(x[dt[:, 2]] - x[dt[:, 1]], y[dt[:, 2]] - y[dt[:, 1]])
+
+    # Semi-perimeters
+    s = (s1 + s2 + s3) / 2
+
+    # Areas (Heron's formula)
+    A = np.sqrt(s * (s - s1) * (s - s2) * (s - s3))
+
+    # "Equilaterality" of the triangles (= 2*inradius/circumradius):
+    # 1 if equilateral, 0 if degenerate
+    E = 8 * A**2 / (s * s1 * s2 * s3)
+
+    # Map matrix from triangles to nodes
+    row_idx = np.repeat(np.arange(nt), 3)
+    col_idx = dt.flatten()
+    data = np.ones(len(row_idx))
+
+    M = scipy.sparse.coo_matrix((data, (row_idx, col_idx)), shape=(nt, np_points))
+
+    # Weighted mean of the partial derivatives (a or b coefficient) using the
+    # "equilaterality" of each triangle for a given node
+    dzdx = M.T @ (C[:, 0] * E) / (M.T @ E)
+    dzdy = M.T @ (C[:, 1] * E) / (M.T @ E)
+
+    dzdx = dzdx.reshape(siz0, order = 'F')
+    dzdy = dzdy.reshape(siz0, order = 'F')
+
+    return dzdx, dzdy
