@@ -1,13 +1,13 @@
 from . import utils
 import numpy as np
 
-def txdelayCircular(param, tilt, width):
+def txdelayCircular(param : utils.param, tilt : float, width: float) -> np.ndarray:
     return txdelay(param, tilt, width)
 
-def txdelayPlane(param, tilt):
+def txdelayPlane(param : utils.param, tilt : float) -> np.ndarray:
     return txdelay(param, tilt)
 
-def txdelayFocused(param, x, y):
+def txdelayFocused(param : utils.param, x : float, y : float) -> np.ndarray:
     return txdelay(x, y, param)
 
 def txdelay(*args):

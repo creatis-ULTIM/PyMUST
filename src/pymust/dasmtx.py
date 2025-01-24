@@ -4,7 +4,8 @@ import scipy.optimize, itertools
 import scipy, scipy.interpolate
 from . import  utils
 
-def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
+
+def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin) -> scipy.sparse.spmatrix:
     """
     %DASMTX   Delay-and-sum matrix
     %   M = DASMTX(SIG,X,Z,DELAYS,PARAM) returns the numel(X)-by-numel(SIG)
@@ -316,6 +317,12 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
             tanRX = tanRX*np.ones(x.shape)
 
 
+    # NoteGB: Temporary, while checking the code of virtual sources in the DAS matrix
+    if not utils.isfield(param,'useVirtualSource'):
+        useVirtualSource = False
+    else:
+        useVirtualSource = param.useVirtualSource
+
 
     #%-- Passive imaging
     if not utils.isfield(param,'passive'):
@@ -443,13 +450,14 @@ def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin):
     #% In a compact matrix form, this yields:
     if param.passive:
         dTX = np.zeros_like(x)
-    else:
+    elif not useVirtualSource:
         # OLD version of computing the transmission delays
         #% For a given location [x(k),z(k)], one has:
         #% dTX(k) = min(delaysTXi*c + sqrt((xTi-x(k)).^2 + (zTi-z(k)).^2));
         #% In a compact matrix form, this yields:
-        #dTX = np.min(delaysTXi*c + np.sqrt((xTi-x)**2 + (zTi-z)**2), 1).reshape((-1,1))
+        dTX = np.min(delaysTXi*c + np.sqrt((xTi-x)**2 + (zTi-z)**2), 1).reshape((-1,1))
 
+    else:
         WasTransmitting = np.logical_not(np.isnan(delaysTX))
         assert np.sum(np.abs(np.diff(WasTransmitting)))<3, 'Multiple transmitting sub-apertures are not allowed during beamforming.'
         nTX = np.count_nonzero(WasTransmitting); # number of transmitting elements
