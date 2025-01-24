@@ -251,8 +251,8 @@ def fresnelint(x):
 
 
 # Plotting
-def polarplot(x, z, v, cmap = 'gray',background = 'black', probeUpward = True):
-    plt.pcolormesh(x, z, v, cmap = cmap, shading='gouraud')
+def polarplot(x, z, v, cmap = 'gray',background = 'black', probeUpward = True, **kwargs):
+    plt.pcolormesh(x, z, v, cmap = cmap, shading='gouraud', **kwargs)
     plt.axis('equal')
     ax = plt.gca()
     ax.set_facecolor(background)
