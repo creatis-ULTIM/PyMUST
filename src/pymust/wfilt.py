@@ -1,7 +1,7 @@
 import numpy as np,scipy, logging
 import typing
 
-def wfilt(SIG: np.ndarray, method: str, n: int) -> np.ndarray :
+def wfilt(SIG: np.ndarray, method: str, n: int) -> np.ndarray:
     """
     %WFILT   Wall filtering (or clutter filtering)
     %   fSIG = WFILT(SIG,METHOD,N) high-pass (wall) filters the RF or I/Q
