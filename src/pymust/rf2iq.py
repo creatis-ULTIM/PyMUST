@@ -2,7 +2,7 @@ import numpy as np, scipy, scipy.signal, logging
 from . import utils
 from typing import Union
 
-def rf2iq(RF : np.ndarray, Fs : Union[float, utils.Param], Fc : float = None, B : float = None):
+def rf2iq(RF : np.ndarray, Fs : Union[float, utils.Param], Fc : float = None, B : float = None) -> np.ndarray:
     """
     %RF2IQ   I/Q demodulation of RF data
     %   IQ = RF2IQ(RF,Fs,Fc) demodulates the radiofrequency (RF) bandpass

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import scipy, numpy as np, typing, logging
 from . import utils
 
@@ -12,7 +13,7 @@ def smoothn(y : np.ndarray,
             Spacing : typing.Optional[np.ndarray] = None,
             Order : typing.Optional[int] = 2,   
             Weight : str = 'bisquare',
-            isrobust : bool = False ):
+            isrobust : bool = False ) -> tuple[np.ndarray, float, bool]:
     """
     %SMOOTHN Robust spline smoothing for 1-D to N-D data.
     %   SMOOTHN provides a fast, automatized and robust discretized spline

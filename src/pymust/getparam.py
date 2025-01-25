@@ -2,7 +2,7 @@ import numpy as np
 from . import utils
 
 
-def getparam(probe : str): 
+def getparam(probe : str) -> utils.Param: 
     #GETPARAM   Get parameters of a uniform linear or convex array
 #   PARAM = GETPARAM opens a dialog box which allows you to select a
 #   transducer whose parameters are returned in PARAM.
