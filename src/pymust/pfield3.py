@@ -89,8 +89,8 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
             and 2nd rows containing the x and y coordinates, respectively. 
     3)  PARAM.width: element width, in the x-direction (in m, REQUIRED)
     4)  PARAM.height: element height, in the y-direction (in m, REQUIRED)
-    5)  PARAM.bandwidth: pulse-echo 6dB fractional bandwidth (in #)
-            The default is 75#.
+    5)  PARAM.bandwidth: pulse-echo 6dB fractional bandwidth (in %)
+            The default is 75%.
     6)  PARAM.baffle: property of the baffle:
             'soft' (default), 'rigid', or a scalar > 0.
             See "Note on BAFFLE properties" below for details
