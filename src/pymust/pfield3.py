@@ -282,7 +282,7 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
     #-- 5) Fractional bandwidth at -6dB (in %)
     if 'bandwidth' not in param:
         param.bandwidth = 75
-    assert param.bandwidth>0 and param.bandwidth<200, 'The fractional bandwidth at -6 dB (PARAM.bandwidth, in %) must be in ]0,200[' #DR : is this a typo ]0,200[ or [0,200] ?
+    assert param.bandwidth>0 and param.bandwidth<200, 'The fractional bandwidth at -6 dB (PARAM.bandwidth, in %) must be in ]0,200['
 
     #-- 6) Baffle
     #   An obliquity factor will be used if the baffle is not rigid
@@ -342,6 +342,10 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
     FreqSweep = param.TXfreqsweep
     assert FreqSweep is None or (np.isscalar(FreqSweep) and utils.isnumeric(FreqSweep) and FreqSweep>0), 'PARAM.TXfreqsweep must be empty (windowed sine) or a positive scalar (linear chirp).'
 
+    # DR: Possibly add explanation of casting RC to single precision
+    if options.RC is not None and len(options.RC):
+        options.RC = options.RC.astype(np.float32)
+    
     #%----------------------------------%
     #% END of Check the PARAM structure %
     #%----------------------------------%
@@ -594,9 +598,6 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
     #-- We replace EXP by EXP*ObliFac/r
     EXP = EXP*ObliFac/r
 
-    if options.RC is not None and len(options.RC): #DR : shouldn't this be checked at the "Check the OPTIONS structure"
-        options.RC = options.RC.astype(np.float32)
-
     #-- TX apodization
     APOD = param.TXapodization.flatten(order='F')
 
@@ -641,9 +642,9 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
             DIR = DIRx*DIRy
 
         #-- Radiation patterns of the single elements
-        # They are the combination of the far-field patterns of the M small
+        # They are the combination of the far-field patterns of the M*N small
         # segments that make up the single elements
-        #-- DR : combine M*N small segments?
+        #--
         if isFFD: # isFFD = true -> frequency-dependent directivity
             #TODO: CHECK THIS IS CORRECT
             RPmono =  average_over_last_axis(DIR*EXP) # summation over the M*N small segments
