@@ -2,7 +2,7 @@ import numpy as np
 import scipy, scipy.interpolate
 from . import  utils
 
-def dasmtx3(SIG : np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *varargin) -> scipy.sparse.spmatrix:
+def dasmtx3(SIG: np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *varargin) -> scipy.sparse.spmatrix:
     """
     DASMTX3   Delay-and-sum matrix for 3-D imaging with a matrix array
     M = DASMTX3(SIG,X,Y,Z,DELAYS,PARAM) returns the numel(X)-by-numel(SIG)

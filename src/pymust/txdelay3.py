@@ -2,13 +2,13 @@ from . import utils
 import numpy as np
 import scipy.optimize
 
-def txdelay3Plane(param, tiltx, tilty):
+def txdelay3Plane(param: utils.Param, tiltx: float, tilty: float) -> np.ndarray:
     return txdelay3(param, tiltx, tilty)
 
-def txdelay3Diverging(param, tiltx, tilty, omega):
+def txdelay3Diverging(param: utils.Param, tiltx: float, tilty: float, omega: float) -> np.ndarray:
     return txdelay3(param, tiltx, tilty, omega)
 
-def txdelay3Focused(param, x, y, z):
+def txdelay3Focused(param: utils.Param, x: float|np.ndarray, y: float|np.ndarray, z: float|np.ndarray) -> np.ndarray:
     return txdelay3(x, y, z, param)
 
 def txdelay3(*args):

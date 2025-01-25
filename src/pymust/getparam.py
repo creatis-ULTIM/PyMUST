@@ -2,30 +2,30 @@ import numpy as np
 from . import utils
 
 
-def getparam(probe : str) -> utils.Param: 
+def getparam(probe: str) -> utils.Param:
     #GETPARAM   Get parameters of a uniform linear or convex array
 #   PARAM = GETPARAM opens a dialog box which allows you to select a
 #   transducer whose parameters are returned in PARAM.
-    
+
     #   PARAM = GETPARAM(PROBE), where PROBE is a string, returns the prameters
 #   of the transducer given by PROBE.
-    
+
     #   The structure PARAM is used in several functions of MUST (Matlab
 #   UltraSound Toolbox). The structure returned by GETPARAM contains only
 #   the fields that describe a transducer. Other fields may be required in
 #   some MUST functions.
-    
+
     #   PROBE can be one of the following:
 #   ---------------------------------
 #     1) 'L11-5v' (128-element, 7.6-MHz linear array)
 #     2) 'L12-3v' (192-element, 7.5-MHz linear array)
 #     3) 'C5-2v' (128-element, 3.6-MHz convex array)
 #     4) 'P4-2v' (64-element, 2.7-MHz phased array)
-    
+
     #   These are the <a
 #   href="matlab:web('https://verasonics.com/verasonics-transducers/')">Verasonics' transducers</a>.
 #   Feel free to complete this list for your own use.
-    
+
     #   PARAM is a structure that contains the following fields:
 #   --------------------------------------------------------
 #   1) PARAM.Nelements: number of elements in the transducer array
@@ -37,8 +37,8 @@ def getparam(probe : str) -> utils.Param:
 #   7) PARAM.radius: radius of curvature (in m, Inf for a linear array)
 #   8) PARAM.focus: elevation focus (in m)
 #   9) PARAM.height: element height (in m)
-    
-    
+
+
     #   Example:
 #   -------
 #   #-- Generate a focused pressure field with a phased-array transducer
@@ -62,21 +62,21 @@ def getparam(probe : str) -> utils.Param:
 #   c = colorbar;
 #   c.YTickLabel{end} = '0 dB';
 #   xlabel('[cm]')
-    
-    
+
+
     #   This function is part of <a
 #   href="matlab:web('https://www.biomecardio.com/MUST')">MUST</a> (Matlab UltraSound Toolbox).
 #   MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
-    
+
     #   See also TXDELAY, PFIELD, SIMUS, GETPULSE.
-    
+
     #   -- Damien Garcia -- 2015/03, last update: 2020/07
 #   website: <a
 #   href="matlab:web('https://www.biomecardio.com')">www.BiomeCardio.com</a>
     param = utils.Param()
     probe = probe.upper()
-  
-    
+
+
     # from computeTrans.m (Verasonics, version post Aug 2019)
     if 'L11-5V' == probe:
         # --- L11-5v (Verasonics) ---

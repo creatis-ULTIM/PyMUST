@@ -29,7 +29,7 @@ mysinc = lambda x = None: np.sin(np.abs(x) + eps)/ (np.abs(x) + eps) # [note: In
 #GB TODO: add wait bar
 #GB TODO: allow parallelization
 
-def pfield(x : np.ndarray,y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, param: utils.Param, isQuick : bool = False, options : utils.Options = None):
+def pfield(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, param: utils.Param, isQuick: bool = False, options: utils.Options = None):
 #PFIELD   RMS acoustic pressure field of a linear or convex array
 #   RP = PFIELD(X,Y,Z,DELAYS,PARAM) returns the radiation pattern of a
 #   uniform LINEAR or CONVEX array whose elements are excited at different
