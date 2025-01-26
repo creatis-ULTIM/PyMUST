@@ -3,17 +3,17 @@ import scipy, numpy as np, typing, logging
 from . import utils
 
 
-def smoothn(y : np.ndarray,
-            W : typing.Optional[np.ndarray] = None, 
-            S  : typing.Optional[float] = None,  
-            axis : typing.Optional[np.ndarray] = None, # Use this to specify the axis indicating multicomponent data
-            TolZ : typing.Optional[float] = 1e-3,
-            MaxIter : typing.Optional[int] = 100,
-            Initial : typing.Optional[np.ndarray] = None,
-            Spacing : typing.Optional[np.ndarray] = None,
-            Order : typing.Optional[int] = 2,   
-            Weight : str = 'bisquare',
-            isrobust : bool = False ) -> tuple[np.ndarray, float, bool]:
+def smoothn(y: np.ndarray,
+            W: typing.Optional[np.ndarray] = None,
+            S: typing.Optional[float] = None,
+            axis: typing.Optional[np.ndarray] = None, # Use this to specify the axis indicating multicomponent data
+            TolZ: typing.Optional[float] = 1e-3,
+            MaxIter: typing.Optional[int] = 100,
+            Initial: typing.Optional[np.ndarray] = None,
+            Spacing: typing.Optional[np.ndarray] = None,
+            Order: typing.Optional[int] = 2,
+            Weight: str = 'bisquare',
+            isrobust: bool = False ) -> tuple[np.ndarray, float, bool]:
     """
     %SMOOTHN Robust spline smoothing for 1-D to N-D data.
     %   SMOOTHN provides a fast, automatized and robust discretized spline

@@ -3,7 +3,7 @@ import logging, copy, multiprocessing, functools
 import numpy as np 
 
 # pfield wrapper so it is compatible with multiprocessing. Needs to be defined in a global scope
-def pfieldParallel3(x, y, z, RC, delaysTX, param, options):
+def pfieldParallel3(x: np.ndarray, y: np.ndarray, z: np.ndarray, RC: np.ndarray, delaysTX: np.ndarray, param: utils.Param, options: utils.Options):
     options = options.copy()
     options.ParPool = False # No parallel within the parallel
     options.RC = RC

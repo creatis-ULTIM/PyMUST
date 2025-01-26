@@ -5,7 +5,7 @@ import scipy, scipy.interpolate
 from . import  utils
 
 
-def dasmtx(SIG : np.ndarray, x: np.ndarray, z: np.ndarray, *varargin) -> scipy.sparse.spmatrix:
+def dasmtx(SIG: np.ndarray, x: np.ndarray, z: np.ndarray, *varargin) -> scipy.sparse.spmatrix:
     """
     %DASMTX   Delay-and-sum matrix
     %   M = DASMTX(SIG,X,Z,DELAYS,PARAM) returns the numel(X)-by-numel(SIG)

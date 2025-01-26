@@ -4,7 +4,7 @@ from typing import Union
 from . import utils
 import numpy as np
 
-def genscat(roidim : np.ndarray, meandist: np.ndarray ,I : Union[np.ndarray, None]  = None, g: Union[np.ndarray, float] = None)  -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def genscat(roidim: np.ndarray, meandist: np.ndarray ,I: Union[np.ndarray, None]  = None, g: Union[np.ndarray, float] = None)  -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     %GENSCAT   Generate a distribution of scatterers
     %   [XS,YS,ZS] = GENSCAT([WIDTH HEIGHT],MEANDIST) generates a 2-D

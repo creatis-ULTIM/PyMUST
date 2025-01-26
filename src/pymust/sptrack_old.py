@@ -3,7 +3,7 @@ from . import utils, smoothn
 import numpy as np, scipy
 
 
-def sptrack(I : np.ndarray, param : utils.Param) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def sptrack(I: np.ndarray, param: utils.Param) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     %SPTRACK   Speckle tracking using Fourier-based cross-correlation
     %   [Di,Dj] = SPTRACK(I,PARAM) returns the motion field [Di,Dj] that occurs

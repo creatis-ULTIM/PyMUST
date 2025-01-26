@@ -25,7 +25,7 @@ def average_over_last_axis(X):
 eps = np.finfo(np.float32).eps
 mysinc = lambda x = None: np.sin(np.abs(x) + eps)/ (np.abs(x) + eps) # [note: In MATLAB/numpy, sinc is sin(pi*x)/(pi*x)]
  
-def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, param: utils.Param, isQuick : bool = False, options : utils.Options = None):
+def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, param: utils.Param, isQuick: bool = False, options: utils.Options = None):
     """
     PFIELD3   3-D RMS acoustic pressure field of a planar 2-D array
     RP = PFIELD3(X,Y,Z,DELAYS,PARAM) returns the three-dimensional
@@ -89,8 +89,8 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
             and 2nd rows containing the x and y coordinates, respectively. 
     3)  PARAM.width: element width, in the x-direction (in m, REQUIRED)
     4)  PARAM.height: element height, in the y-direction (in m, REQUIRED)
-    5)  PARAM.bandwidth: pulse-echo 6dB fractional bandwidth (in #)
-            The default is 75#.
+    5)  PARAM.bandwidth: pulse-echo 6dB fractional bandwidth (in %)
+            The default is 75%.
     6)  PARAM.baffle: property of the baffle:
             'soft' (default), 'rigid', or a scalar > 0.
             See "Note on BAFFLE properties" below for details
@@ -282,7 +282,7 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
     #-- 5) Fractional bandwidth at -6dB (in %)
     if 'bandwidth' not in param:
         param.bandwidth = 75
-    assert param.bandwidth>0 and param.bandwidth<200, 'The fractional bandwidth at -6 dB (PARAM.bandwidth, in %) must be in ]0,200[' #DR : is this a typo ]0,200[ or [0,200] ?
+    assert param.bandwidth>0 and param.bandwidth<200, 'The fractional bandwidth at -6 dB (PARAM.bandwidth, in %) must be in ]0,200['
 
     #-- 6) Baffle
     #   An obliquity factor will be used if the baffle is not rigid
@@ -342,6 +342,10 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
     FreqSweep = param.TXfreqsweep
     assert FreqSweep is None or (np.isscalar(FreqSweep) and utils.isnumeric(FreqSweep) and FreqSweep>0), 'PARAM.TXfreqsweep must be empty (windowed sine) or a positive scalar (linear chirp).'
 
+    # DR: Possibly add explanation of casting RC to single precision
+    if options.RC is not None and len(options.RC):
+        options.RC = options.RC.astype(np.float32)
+    
     #%----------------------------------%
     #% END of Check the PARAM structure %
     #%----------------------------------%
@@ -594,9 +598,6 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
     #-- We replace EXP by EXP*ObliFac/r
     EXP = EXP*ObliFac/r
 
-    if options.RC is not None and len(options.RC): #DR : shouldn't this be checked at the "Check the OPTIONS structure"
-        options.RC = options.RC.astype(np.float32)
-
     #-- TX apodization
     APOD = param.TXapodization.flatten(order='F')
 
@@ -641,9 +642,9 @@ def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray
             DIR = DIRx*DIRy
 
         #-- Radiation patterns of the single elements
-        # They are the combination of the far-field patterns of the M small
+        # They are the combination of the far-field patterns of the M*N small
         # segments that make up the single elements
-        #-- DR : combine M*N small segments?
+        #--
         if isFFD: # isFFD = true -> frequency-dependent directivity
             #TODO: CHECK THIS IS CORRECT
             RPmono =  average_over_last_axis(DIR*EXP) # summation over the M*N small segments
