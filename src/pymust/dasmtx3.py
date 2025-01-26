@@ -305,12 +305,12 @@ def dasmtx3(SIG: np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *varar
     #         zTi =np.zeros_like(idx)
     #         delaysTXi = delaysTX[idx]
 
-    # DR : The current MUST (and PyMUST) implementation doesn't calculate the f-number (f-number is converted to [0,0] if None)
+
     #-- f-number (determined automatically if not given)
     # The f-number is determined from the element directivity
     # See the paper "So you think you can DAS?"
     if param.get('fnumber', None) is None:
-        param.fnumber = np.array([0, 0]) # Initialize f-number
+        param.fnumber = np.array([0, 0], dtype=np.float32) # Initialize f-number
         lambdaMIN = c/(param.fc*(1+param.bandwidth/200))
         RXa = abs(param.RXangle)
         # Note: in Matlab, sinc(x) = sin(pi*x)/(pi*x)
@@ -406,7 +406,7 @@ def dasmtx3(SIG: np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray, *varar
     #-- Aperture (using the f-number):
     if (fNum != 0).any():
         #-- for a planar array
-        Iaperture = np.logical_and(np.abs(dxT)<=(np.abs(dzT)*fNum[0]),np.abs(dyT)<=(np.abs(dzT)*fNum[1]))
+        Iaperture = np.logical_and(np.abs(dxT)<=(np.abs(dzT)/2/fNum[0]),np.abs(dyT)<=(np.abs(dzT)/2/fNum[1]))
         I = np.logical_and(I,Iaperture)
     
     dxT, dyT, dzT = None, None, None # clear dxT dyT dzT
