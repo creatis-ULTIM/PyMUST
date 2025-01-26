@@ -1,6 +1,6 @@
 import numpy as np, logging, typing
 from . import utils
-def impolgrid(siz : typing.Union[int, np.ndarray, list ], zmax : float, width:float, param : utils.Param =None):
+def impolgrid(siz: typing.Union[int, np.ndarray, list], zmax: float, width: float, param: utils.Param = None):
     """
     %IMPOLGRID   Polar-type grid for ultrasound images
     %   IMPOLGRID returns a polar-type (fan-type) grid expressed in Cartesian
@@ -111,7 +111,7 @@ def impolgrid(siz : typing.Union[int, np.ndarray, list ], zmax : float, width:fl
     isLINEAR = np.isinf(R)
 
     if not isLINEAR and not noWidth:
-            logging.warning('MUST:impolgrid', 'The parameter WIDTH is ignored with a convex array.')
+        logging.warning('MUST:impolgrid', 'The parameter WIDTH is ignored with a convex array.')
 
     #%-- Origo (x0,z0)
     #% x0 = 0;

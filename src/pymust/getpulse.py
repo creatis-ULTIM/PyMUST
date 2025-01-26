@@ -1,8 +1,8 @@
 from __future__ import annotations
 import numpy as np
-from . import utils    
+from . import utils
 
-def getpulse(param: utils.Param, way :int = 2, PreVel : str = 'pressure', dt : float = 1e-09) -> tuple[np.ndarray, np.ndarray]: 
+def getpulse(param: utils.Param, way: int = 2, PreVel: str = 'pressure', dt: float = 1e-09) -> tuple[np.ndarray, np.ndarray]:
     #GETPULSE   Get the transmit pulse
 #   PULSE = GETPULSE(PARAM,WAY) returns the one-way or two-way transmit
 #   pulse with a time sampling of 1 nanosecond. Use WAY = 1 to get the

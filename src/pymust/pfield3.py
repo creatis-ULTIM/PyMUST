@@ -25,7 +25,7 @@ def average_over_last_axis(X):
 eps = np.finfo(np.float32).eps
 mysinc = lambda x = None: np.sin(np.abs(x) + eps)/ (np.abs(x) + eps) # [note: In MATLAB/numpy, sinc is sin(pi*x)/(pi*x)]
  
-def pfield3(x : np.ndarray, y : np.ndarray, z: np.ndarray, delaysTX : np.ndarray, param: utils.Param, isQuick : bool = False, options : utils.Options = None):
+def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, param: utils.Param, isQuick: bool = False, options: utils.Options = None):
     """
     PFIELD3   3-D RMS acoustic pressure field of a planar 2-D array
     RP = PFIELD3(X,Y,Z,DELAYS,PARAM) returns the three-dimensional
