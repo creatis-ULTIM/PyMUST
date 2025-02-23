@@ -256,7 +256,7 @@ def pfield(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, pa
         isMKMOVIE = options.CallFun == 'mkmovie'    
         
     #GB: TODO: do parallelism
-    #GB TODO:  For txhe moment no statistics.
+    #GB TODO:  For the moment no statistics of usage.
 
     
     #%---------------------------%
