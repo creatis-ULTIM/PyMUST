@@ -332,6 +332,7 @@ def dasmtx(SIG: np.ndarray, x: np.ndarray, z: np.ndarray, *varargin) -> scipy.sp
 
 
     #%-- Number of elements
+    assert isinstance(delaysTX,np.ndarray), 'delaysTX must be a numpy array.'
     if len(delaysTX.shape) == 1:
         delaysTX = delaysTX.reshape((1, -1))
     if delaysTX.shape[0] == nc and delaysTX.shape[1] != nc:
