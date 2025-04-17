@@ -353,7 +353,9 @@ def simus(*varargin):
     maxD = maxD + tp[-1] * param.c #add pulse length
 
     #%-- FREQUENCY SAMPLES
-    df = 1/2/(2*maxD/param.c + np.max(delaysTX.flatten() + param.RXdelay.flatten())) # % to avoid aliasing in the time domain
+    valid_tx_delays = np.array([e for e in delaysTX.flatten() if not np.isnan(e)])
+    df = 1/2/(2*maxD/param.c + np.max(np.concat((valid_tx_delays,param.RXdelay.flatten())))) # % to avoid aliasing in the time domain
+    # df = 1/2/(2*maxD/param.c + np.max(delaysTX.flatten() + param.RXdelay.flatten())) # % to avoid aliasing in the time domain
     df = df*options.FrequencyStep
     Nf = 2*int(np.ceil(param.fc/df))+1 # % number of frequency samples
     #%-- Run PFIELD to calculate the RF spectra
