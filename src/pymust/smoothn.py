@@ -420,25 +420,28 @@ def RobustWeights(y,z,I,h,wstr):
 
 """
 
-
 # Initial Guess with weighted/missing data
-def InitialGuess(y,I):
+def InitialGuess(y, I):
     ny = y.shape[0]
-    #%-- nearest neighbor interpolation (in case of missing values)
+    #-- nearest neighbor interpolation (in case of missing values)
     if np.any(np.logical_not(I)):
-        z = np.zeros_like(y)        
+        z = np.zeros_like(y)
         for i in range(ny):
-            _,L = scipy.ndimage.distance_transform_edt(np.logical_not(I), return_indices = True)
+            _, L = scipy.ndimage.distance_transform_edt(np.logical_not(I), return_indices=True)
             z[i] = y[i]
-            z[i][np.logical_not(I)] = y[i][*L[:,np.logical_not(I)]]; #Use np take
-            #z[i][np.logical_not(I)] = np.take(y[i], L[:, np.logical_not(I)])
+
+            # Fix: Flatten the indices to handle multidimensional arrays properly
+            mask = np.logical_not(I)
+            indices = tuple(L[j, mask] for j in range(L.shape[0]))
+            z[i][mask] = y[i][indices]
     else:
         z = y
 
     #-- coarse fast smoothing using one-tenth**d of the DCT coefficients
-    z = scipy.fft.dctn(z, axes = np.arange(1, len(z.shape)))
-    indices = np.indices(z.shape) / np.array(z.shape).reshape(([-1] + [1 for _ in range(z.ndim)])) #Normalised indices between 0 and 1
-    maxIndex = np.max(indices, axis = 0)
-    z[maxIndex >.1] = 0 # np.power(.1, 1/z.ndim) so that it has constant
-    z = scipy.fft.idctn(z,  axes = np.arange(1, len(z.shape)))
+    z = scipy.fft.dctn(z, axes=np.arange(1, len(z.shape)))
+    indices = np.indices(z.shape) / np.array(z.shape).reshape(([-1] + [1 for _ in range(z.ndim)]))
+    maxIndex = np.max(indices, axis=0)
+    z[maxIndex > .1] = 0
+    z = scipy.fft.idctn(z, axes=np.arange(1, len(z.shape)))
     return z
+
