@@ -553,7 +553,7 @@ def pfield(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, pa
         #% One has exp[-i(k r + w delay)] = exp[-2i pi(f r/c + f delay)] in the Eq.
         #% One wants: the phase increment 2pi(df r/c + df delay) be < 2pi.
         #% Therefore: df < 1/(r/c + delay).
-        df = 1/(np.max(r/c) + np.max(delaysTX))
+        df = 1/(np.nanmax(r/c) + np.nanmax(delaysTX))
         df = options.FrequencyStep*df
         #% note: df is here an upper bound; it will be recalculated below
         param.df = df
@@ -561,6 +561,7 @@ def pfield(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, pa
     #%-- FREQUENCY SAMPLES
     Nf = int(2*np.ceil(param.fc/df)+1) # number of frequency samples
     f = np.linspace(0,2*param.fc,Nf) # frequency samples
+    param.f = f;
     df = f[1]  #% update the frequency step
     #%- we keep the significant components only by using options.dBThresh
     S = np.abs(pulseSpectrum(2*np.pi*f)*probeSpectrum(2*np.pi*f))
@@ -723,7 +724,6 @@ def pfield(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, pa
     #%-----------------------------%
     EXP = EXP.astype(np.complex64)
     # TODO GB: process several frequencies at the same time might remove some overhead of numpy calls
-
     for k  in range(nSampling):
 
         kw = 2*np.pi*f[k]/c #; % wavenumber
@@ -801,7 +801,6 @@ def pfield(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, pa
 
         #%- include spectrum responses:
         RPk = pulseSPECT[k]*RPk* probeSPECT[k]
-
         RPk[isOUT] = 0 #<- if not jax
         
        #%-- Output

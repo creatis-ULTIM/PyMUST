@@ -519,7 +519,7 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
         # One has exp[-i(k r + w delay)] = exp[-2i pi(f r/c + f delay)] in the Eq.
         # One wants: the phase increment 2pi(df r/c + df delay) be < 2pi.
         # Therefore: df < 1/(r/c + delay).
-        df = 1/(np.max(r/c) + np.max(delaysTX))
+        df = 1/(np.max(r/c) + np.nanmax(delaysTX))
         df = options.FrequencyStep*df
         # note: df is here an upper bound; it will be recalculated below
         param.df = df
