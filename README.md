@@ -6,18 +6,23 @@ This is a Python reimplementation of the MUST ultrasound toolbox for synthetic i
 As a design decision, we have tried to keep syntax as close as possible with the matlab version, specially regarding the way functions are called. This has resulted in non-pythonic arguments (i.e., overuse of variable number of positional arguments). This allows to make use of Must documentation (https://www.biomecardio.com/MUST/documentation.html). Keep in mind that, since Python does not allow a changing number of returns, each function will output the maximum number of variables of the matlab version.
 
 ## Installation
+You can obtain the latest version from github, or alternatively install it using pip or conda. Please note that the github version might have bugs or other issues, since it is in development. Do not hesitate to create an issue in Pymust.
+
 ### Install from pip
 > pip install pymust
 
+### Install from conda
+> conda install -c conda-forge pymut
+
 ### Download from github
+
 To install a local version of pymust with its dependencies (matplotlib, scipy, numpy), download it, go to the main folder and then run:
+> pip install -e .
+> 
 The package works in OsX, Linux and Windows (but parallelism might not be available on Windows). We recommend installing it in a separate conda environment.
 
 To install pymust with its dependencies (matplotlib, scipy, numpy), you can directly install from pip:
 > pip install git+https://github.com/creatis-ULTIM/PyMUST.git
-
-Alternatively, you can install from the test pypi using the following instruction:
-> python3 -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ PyMUST
 
 ## Main functions
 Please refer to the Matlab documentation or examples for a full description of the functions involved
@@ -27,13 +32,19 @@ Please refer to the Matlab documentation or examples for a full description of t
 - Bmode and Doppler image beamforming from radiofrequencies (tgc, rf2iq, das, bmode, iq2doppler)
 
 ## Examples
-In the folder "examples", you have python notebooks ilustrating the main functionalities of PyMUST. They are the same as the ones available in the Matlab version.
+In the folder "examples", you have python notebooks ilustrating the main functionalities of PyMUST. They are the same as the ones available in the Matlab version. As a quickstart, please use this [notebook](examples/quickstart_demo.ipynb). There are also more specific demos for some fetures:
+- [3D acoustics](examples/pfield3.ipynb)
+- [Motion estimation](examples/rotatingDiskVelocitySynthetic.ipynb)
+
+## Tutorials
+The tutorials [folder](tutorials) are incomplete notebooks for a course at Universitat Pompeu Fabra on ultrasound image acquisition and reconstruction (Biomedical Imaging Systems), that students need to complete during the practical sessions. 
 
 ## Next steps
 If there is a functionality that you would like to see, please open an issue.
 - Update function documentation.
 - Find computational bottlenecks, and optimise (possibly with C extensions).
-- GPU acceleration
+- GPU acceleration (coming soon!)
+- Harmonic imaging (coming soon!)
 - Differentiable rendering.
 
 ## Citation
