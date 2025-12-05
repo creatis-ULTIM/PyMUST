@@ -21,5 +21,7 @@ if not interactiveDevelopment:
     from pymust.getpulse import getpulse
     from pymust.smoothn import smoothn
     from pymust.sptrack import sptrack
+    from pymust.numericalEngine import NumericalEngine, NumpyEngine
+
     # Missing functions: genscat, speckletracking, cite + visualisation
     # Visualisation: pcolor, Doppler color map + transparency, radiofrequency data
