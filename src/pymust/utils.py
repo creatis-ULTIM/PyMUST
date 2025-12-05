@@ -2,6 +2,8 @@ import numpy as np, scipy, scipy.interpolate, multiprocessing, multiprocessing.p
 from abc import ABC
 import inspect, matplotlib, pickle, os, matplotlib.pyplot as plt, copy
 from collections import deque
+import numbers
+
 
 
 class dotdict(dict, ABC):
@@ -74,15 +76,186 @@ class Options(dotdict):
         idx = np.stack([idx, np.roll(idx, -1)], axis = 1)
         idx[-1, 1] = N
         return idx
+    @classmethod
+    def getQuickOptions(cls):
+        options = cls()
+        options.dBThresh = -20
+        options.ElementSplitting = 1
+        options.FullFrequencyDirectivity = False
+        options.FrequencyStep = 1.5
+        return options
 
 class Param(dotdict):
     @property 
     def names(self):
+        """
+        check the possible names 
+        """
         names = {'attenuation','baffle','bandwidth','c','fc',
             'fnumber','focus','fs','height','kerf','movie','Nelements',
             'passive','pitch','radius','RXangle','RXdelay'
             'TXapodization','TXfreqsweep','TXnow','t0','width'}
         return {n.lower(): n for n in names}
+    
+    def checkTransducer(self):
+        """
+        Check whether the description of the transducer is correct.
+        """
+        #%---------------------------%
+        #% Check the PARAM structure %
+        #%---------------------------%
+
+        param = self.ignoreCaseInFieldNames()
+
+        #-- 0) Number of elements
+        assert 'Nelements' in param, 'The number of elements (PARAM.Nelements) is required.'
+
+
+        #-- 1) Center frequency (in Hz)
+        assert 'fc' in param, 'A center frequency value (PARAM.fc) is required.'
+        fc = param.fc # central frequency (Hz)
+        assert isnumeric(fc) and np.isscalar(fc) and fc>0, 'The central frequency must be positive.'
+
+        #%-- 2) Pitch (in m)
+        assert'pitch' in param,'A pitch value (PARAM.pitch) is required.'
+        pitch = param.pitch
+        assert isnumeric(pitch) and np.isscalar(pitch) and pitch>0, 'The pitch must be positive.'
+
+        #%-- 3) Element width and/or Kerf width (in m)
+        if 'width' in param and 'kerf' in param:
+            assert np.abs(pitch-param.width-param.kerf)< eps('single'), 'The pitch must be equal to (kerf width + element width).'
+        elif 'kerf' in param:
+            param.width = pitch-param.kerf
+        elif 'width' in param:
+            param.kerf = pitch-param.width
+        else:
+            raise ValueError('An element width (PARAM.width) or kerf width (PARAM.kerf) is required.')
+
+        #%-- 4) Elevation focus (in m)
+        if 'focus' not in param:
+            param.focus = np.inf # default = no elevation focusing
+
+        Rf = param.focus
+        assert isnumeric(Rf) and np.isscalar(Rf) and Rf>0, 'The element focus must be positive.'
+
+        #%-- 5) Element height (in m)
+        if  'height' not in param:
+            param.height = np.inf # default = line array
+
+        ElementHeight = param.height
+        assert isnumeric(ElementHeight) and np.isscalar(ElementHeight) and ElementHeight>0,'The element height must be positive.'
+
+        #%-- 6) Radius of curvature (in m) - convex array
+        if 'radius' not in param:
+            param.radius = np.inf # default = linear array
+
+        RadiusOfCurvature = param.radius
+        assert isnumeric(RadiusOfCurvature) and np.isscalar(RadiusOfCurvature) and RadiusOfCurvature>0,'The radius of curvature must be positive.'
+
+        #%-- 7) Fractional bandwidth at -6dB (in %)
+        if 'bandwidth' not in param:
+            param.bandwidth = 75
+
+        assert param.bandwidth>0 and param.bandwidth<200, 'The fractional bandwidth at -6 dB (PARAM.bandwidth, in %) must be in ]0,200['
+
+        #%-- 8) Baffle
+        #   An obliquity factor will be used if the baffle is not rigid
+        #%   (default = SOFT baffle)
+        if  'baffle' not in param:
+            param.baffle = 'soft' #  default
+
+        if param.baffle in ['rigid', 'soft'] or np.isscalar(param.baffle):
+            if isinstance(param.baffle, numbers.Number) and  param.baffle <= 0: 
+                raise ValueError('The "baffle" field scalar must be positive')
+        else:
+            raise ValueError('The "baffle" field must be "rigid","soft" or a positive scalar')
+        
+    def checkTXParameters(self, delaysTX = None, apodTX = None):
+        delaysTX = delaysTX.copy()
+        #Check the transmit delays
+        assert isnumeric(delaysTX) and all(delaysTX[~np.isnan(delaysTX)]>=0),  'DELAYS must be a nonnegative array.'
+
+        NumberOfElements = delaysTX.shape[1]
+        # Note: param.Nelements can be required in other functions of the
+        #       Matlab Ultrasound Toolbox
+        if 'Nelements' in self:
+            assert self.Nelements==NumberOfElements, 'DELAYS must be of length PARAM.Nelements.'
+        self.Nelements = NumberOfElements
+
+    
+        # Note: delaysTX can be a matrix. This option can be used for MLT
+        # (multi-line transmit) for example. In this case, each row represents a
+        # delay series. For example, for a 4-MLT sequence with a 64-element phased
+        # array, delaysTX has 4 rows and 64 columns, i.e. size(delaysTX) = [4 64].
+
+        #delaysTX  should be a row vector
+        if len(delaysTX.shape) == 1:
+            delaysTX = delaysTX.reshape((1, -1))
+        delaysTX = delaysTX.astype(np.float32)
+
+        #Check the transmit delays
+        assert all(delaysTX[~np.isnan(delaysTX)]>=0),  'DELAYS must be a nonnegative array.'
+
+        #%-- 11) Transmit apodization (no unit)
+        if  apodTX is None:
+            apodTX = np.ones((1,NumberOfElements), dtype = np.float32)
+        else:
+            apodTX = apodTX.copy()
+            if isinstance(apodTX, np.ndarray) and len(apodTX.shape) == 1:
+                apodTX = apodTX.reshape((1, -1))
+            assert (len(apodTX.shape) == 2 and apodTX.shape[0] == 1) and isnumeric(apodTX), 'PARAM.TXapodization must be a vector'
+            assert apodTX.shape[1]==NumberOfElements, 'PARAM.TXapodization must be of length = (number of elements)'
+
+        #% apodization is 0 where TX delays are NaN:
+        idx = np.isnan(delaysTX)
+        apodTX[0, np.any(idx, axis = 0)]= 0
+        delaysTX[idx] = 0
+
+        # 12) TX pulse: Number of wavelengths
+        if 'TXnow' not in self:
+            self.TXnow = 1
+
+        NoW = self.TXnow
+        assert np.isscalar(NoW) and isnumeric(NoW) and NoW>0, 'PARAM.TXnow must be a positive scalar.'
+
+        #%-- 13) TX pulse: Frequency sweep for a linear chirp
+        if 'TXfreqsweep' not in self or np.isinf(NoW):
+            self.TXfreqsweep = None
+
+        FreqSweep = self.TXfreqsweep
+        assert FreqSweep is None or (np.isscalar(FreqSweep) and isnumeric(FreqSweep) and FreqSweep>0), 'PARAM.TXfreqsweep must be empty (windowed sine) or a positive scalar (linear chirp).'
+        return delaysTX, apodTX
+
+    def obtainFrequencies(self, options, maxT = None):
+        #%-- FREQUENCY STEP
+        if options.isSIMUS or options.isMKMOVIE: #% PFIELD has been called by SIMUS or MKMOVIE
+            df = options.FrequencyStep
+        else: #% We are in PFIELD only (i.e. not called by SIMUS or MKMOVIE)
+            #% The frequency step df is chosen to avoid interferences due to
+            #% inadequate discretization.
+            #% -- df = frequency step (must be sufficiently small):
+            #% One has exp[-i(k r + w delay)] = exp[-2i pi(f r/c + f delay)] in the Eq.
+            #% One wants: the phase increment 2pi(df r/c + df delay) be < 2pi.
+            #% Therefore: df < 1/(r/c + delay).
+            df = 1/maxT
+            df = options.FrequencyStep*df
+            #% note: df is here an upper bound; it will be recalculated below
+            self.df = df
+
+        #%-- FREQUENCY SAMPLES
+        Nf = int(2*np.ceil(self.fc/df)+1) # number of frequency samples
+        f = np.linspace(0,2*self.fc,Nf) # frequency samples
+        df = f[1]  #% update the frequency step
+        #%- we keep the significant components only by using options.dBThresh
+        S = np.abs(self.pulseSpectrum(2*np.pi*f)*self.probeSpectrum(2*np.pi*f))
+
+        GdB = 20*np.log10(1e-200 + S/np.max(S))# % gain in dB
+        id = np.where(GdB >options.dBThresh)
+        IDX = np.zeros(f.shape) != 0.
+        IDX[id[0][0]:id[0][-1]+1] = True
+
+        f = f[IDX]
+        return f
     
     def getElementPositions(self):
         """

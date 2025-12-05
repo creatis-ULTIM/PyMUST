@@ -364,7 +364,8 @@ def simus(*varargin):
 
     #%- run PFIELD in a parallel pool (NW workers)
     if options.get('ParPool', False):
-        
+        if 'numericalEngine' in options and not options['numericalEngine'].isNumpy:        
+             raise NotImplemented("Cannot use a numerical engine other than numpy for parallel computing")
         with options.getParallelPool() as pool:
             idx = options.getParallelSplitIndices(x.shape[1])
 
@@ -382,7 +383,12 @@ def simus(*varargin):
     else:
         #%- no parallel pool 
         options.RC =  RC
-        _, RFsp,idx = pfield(x,y,z,delaysTX,param,options)
+        # 
+        extra_args = {}
+        if 'engine' in options:
+             extra_args['numericalEngine'] = options['numericalEngine']
+        _, RFsp,idx = pfield(x,y,z,delaysTX,param,options, **extra_args)
+
         RFspectrum[idx,:]  = RFsp
 
     #%-- RF signals (in the time domain)
