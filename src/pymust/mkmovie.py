@@ -157,7 +157,7 @@ def mkmovie(*varargin):
     %       scatter(x,z,5,'w','filled')
     %       hold off
     %       axis equal off
-    %       title([int2str(info.TimeStep*k*1e6) ' \mus'])
+    %       title([int2str(info.TimeStep*k*1e6) ' \\mus'])
     %       drawnow
     %   end
     %

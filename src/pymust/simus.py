@@ -200,7 +200,7 @@ def simus(*varargin):
     %      (0:size(RF,1)-1)/param.fs*1e6,'k')
     %   set(gca,'XTick',1:10,'XTickLabel',int2str((1:7:64)'))
     %   title('RF signals')
-    %   xlabel('Element number'), ylabel('time (\mus)')
+    %   xlabel('Element number'), ylabel('time (\\mus)')
     %   xlim([0 11]), axis ij 
     %   
     %
