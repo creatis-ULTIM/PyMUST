@@ -1,4 +1,4 @@
-from . import utils, pfield, getpulse
+from . import utils, pfield, getpulse, numericalEngine
 import logging, copy, multiprocessing, functools
 import numpy as np 
 
@@ -364,10 +364,13 @@ def simus(*varargin):
 
     #%- run PFIELD in a parallel pool (NW workers)
     if options.get('ParPool', False):
-        if 'numericalEngine' in options and not options['numericalEngine'].isNumpy:        
-             raise NotImplemented("Cannot use a numerical engine other than numpy for parallel computing")
-        with options.getParallelPool() as pool:
-            idx = options.getParallelSplitIndices(x.shape[1])
+        engine = options.get('numericalEngine', numericalEngine.NumpyEngine)
+        if not engine.isNumpy:
+            raise NotImplementedError("Cannot use a numerical engine other than numpy for parallel computing")
+        with options.getParallelPool() as pool:            # ORIGINAL (debug):
+            print('Using parallel pool with {} workers'.format(pool._processes))
+             #%- split the scatterers into NW chunks
+            idx = options.getParallelSplitIndices(x.shape[1]) #1
 
             RS = pool.starmap(functools.partial(pfieldParallel, delaysTX = delaysTX, param = param, options = options),
                             [ ( x[:,i:j],
@@ -382,13 +385,21 @@ def simus(*varargin):
     #    end
     else:
         #%- no parallel pool 
-        options.RC =  RC
-        # 
-        extra_args = {}
-        if 'engine' in options:
-             extra_args['numericalEngine'] = options['numericalEngine']
-        _, RFsp,idx = pfield(x,y,z,delaysTX,param,options, **extra_args)
+        engine = options.get('numericalEngine', numericalEngine.NumpyEngine)
+        x_in, y_in, z_in = x, y, z
+        options.RC = RC
+        if not engine.isNumpy:
+             x_in = engine.to_backend(x)
+             y_in = engine.to_backend(y) if not utils.isEmpty(y) else None
+             z_in = engine.to_backend(z)
+             options.RC = engine.to_backend(RC)
+             param.RXdelay = engine.to_backend(param.RXdelay)
 
+        _, RFsp,idx = pfield(x_in, y_in, z_in, delaysTX, param, options, engine=engine)
+
+        if not engine.isNumpy:
+            RFsp = engine.to_numpy(RFsp)
+            param.RXdelay = engine.to_numpy(param.RXdelay)
         RFspectrum[idx,:]  = RFsp
 
     #%-- RF signals (in the time domain)
