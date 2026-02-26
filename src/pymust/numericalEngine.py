@@ -1,3 +1,4 @@
+from hashlib import new
 import numpy, importlib
 
 
@@ -31,6 +32,17 @@ class NumericalEngine:
             return x.detach().to('cpu').numpy()
         else:
             return x.detach().numpy()
+        
+    def to_backend(self, x):
+        if self.isNumpy:
+            return x
+        else:
+            return self.backend.asarray(x, device=self.device)
+        
+    def __deepcopy__(self, memo):
+        new = NumericalEngine(self.backend_name, self.device)
+        memo[id(self)] = new
+        return new
 
 NumpyEngine = NumericalEngine() 
     

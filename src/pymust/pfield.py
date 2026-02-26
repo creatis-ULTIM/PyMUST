@@ -327,7 +327,7 @@ def pfield(x : numpy.ndarray,y : numpy.ndarray, z: numpy.ndarray,
 
     # DR: Possibly add explanation of casting RC to single precision
     if options.RC is not None and len(options.RC):
-        options.RC = options.RC.astype(np.float32)
+        options.RC = np.asarray(options.RC, dtype = np.float32)
     
     #%------------------------------------%
     #% END of Check the OPTIONS structure %
@@ -524,7 +524,9 @@ def pfield(x : numpy.ndarray,y : numpy.ndarray, z: numpy.ndarray,
     RP = 0 # % RP = Radiation Pattern
     if isSIMUS:
         #%- For SIMUS only (we need the full spectrum of RX signals):
-        SPECT = np.zeros((nSampling, param.NumberOfElements), dtype = np.complex64)
+        # print(nSampling, param.NumberOfElements)
+        # breakpoint()
+        SPECT = np.zeros((nSampling, param.Nelements), dtype = np.complex64)
     else:
         #%- For MKMOVIE only (we need the full spectrum of the pressure field):
         #%- For using PFIELD alone we need the spectrum recieved on each point:
