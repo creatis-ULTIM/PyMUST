@@ -1,4 +1,4 @@
-from . import utils, pfield, getpulse
+from . import utils, pfield, getpulse, numericalEngine
 import logging, copy, multiprocessing, functools
 import numpy as np 
 

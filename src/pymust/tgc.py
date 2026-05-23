@@ -1,26 +1,34 @@
+# Documentation generated with Claude (claude-sonnet-4-6)
 from __future__ import annotations
 import numpy as np,scipy, scipy.signal
 import itertools
 from . import utils
 def tgc(S: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """
-    %TGC Time-gain compensation for RF or IQ signals
-    %   TGC(RF) or TGC(IQ) performs a time-gain compensation of the RF or IQ
-    %   signals using a decreasing exponential law. Each column of the RF/IQ
-    %   array must correspond to a single RF/IQ signal over (fast-) time.
-    %
-    %   [~,C] = TGC(RF) or [~,C] = TGC(IQ) also returns the coefficients used
-    %   for time-gain compensation (i.e. new_SIGNAL = C.*old_SIGNAL)
-    %
-    %
-    %   This function is part of MUST (Matlab UltraSound Toolbox).
-    %   MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
-    %
-    %   See also RF2IQ, DAS.
-    %
-    %   -- Damien Garcia -- 2012/10, last update 2020/05
-    %   website: <a
-    %   href="matlab:web('https://www.biomecardio.com')">www.BiomeCardio.com</a>
+    """Time-gain compensation for RF or IQ signals.
+
+    Applies TGC using a decreasing exponential law estimated by robust
+    linear regression on the log-envelope. Each column must correspond to
+    a single RF/IQ signal over (fast-) time.
+
+    Parameters
+    ----------
+    S : np.ndarray
+        RF or IQ signals of shape ``(fast_time, elements)``.
+
+    Returns
+    -------
+    S : np.ndarray
+        TGC-compensated signals, same shape as input.
+    C : np.ndarray
+        Gain coefficients applied (``new_signal = C * old_signal``).
+
+    Notes
+    -----
+    Translated from the MATLAB MUST toolbox (Damien Garcia, 2012–2020).
+
+    See Also
+    --------
+    rf2iq, dasmtx
     """
 
     siz0 = S.shape

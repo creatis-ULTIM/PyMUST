@@ -1,48 +1,48 @@
+# Documentation generated with Claude (claude-sonnet-4-6)
 import numpy as np,scipy, logging
 import typing
 
 def wfilt(SIG: np.ndarray, method: str, n: int) -> np.ndarray:
-    """
-    %WFILT   Wall filtering (or clutter filtering)
-    %   fSIG = WFILT(SIG,METHOD,N) high-pass (wall) filters the RF or I/Q
-    %   signals stored in the 3-D array SIG for Doppler imaging.
-    %    
-    %   The first dimension of SIG (i.e. each column) corresponds to a single
-    %   RF or I/Q signal over (fast-) time, with the first column corresponding
-    %   to the first transducer element. The third dimension corresponds to the
-    %   slow-time axis.
-    %
-    %   Three methods are available.
-    %   METHOD can be one of the following (case insensitive):
-    %
-    %   1) 'poly' - Least-squares (Nth degree) polynomial regression.
-    %               Orthogonal Legendre polynomials are used. The fitting
-    %               polynomial is removed from the original I/Q or RF data to
-    %               keep the high-frequency components. N (>=0) represents the
-    %               degree of the polynomials. The (slow-time) mean values are
-    %               removed if N = 0 (the polynomials are reduced to
-    %               constants).
-    %   2) 'dct'  - Truncated DCT (Discrete Cosine Transform).
-    %               Discrete cosine transforms (DCT) and inverse DCT are
-    %               performed along the slow-time dimension. The signals are
-    %               filtered by withdrawing the first N (>=1) components, i.e.
-    %               those corresponding to the N lowest frequencies (with
-    %               respect to slow-time).
-    %   3) 'svd'  - Truncated SVD (Singular Value Decomposition).
-    %               An SVD is carried out after a column arrangement of the
-    %               slow-time dimension. The signals are filtered by
-    %               withdrawing the top N singular vectors, i.e. those
-    %               corresponding to the N greatest singular values.
-    %   
-    %
-    %   This function is part of MUST (Matlab UltraSound Toolbox).
-    %   MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
-    %
-    %   See also IQ2DOPPLER, RF2IQ.
-    %
-    %   -- Damien Garcia -- 2014/06, last update 2023/05/12
-    %   website: <a
-    %   href="matlab:web('https://www.biomecardio.com')">www.BiomeCardio.com</a>
+    """Wall (clutter) filter for RF or I/Q Doppler signals.
+
+    High-pass filters a 3-D array of RF or I/Q signals along the slow-time
+    axis to suppress stationary tissue clutter.
+
+    Parameters
+    ----------
+    SIG : np.ndarray
+        3-D array of shape ``(fast_time, elements, slow_time)``.
+        Each column (first dim) is one RF/IQ signal over fast-time.
+        The third dimension is the slow-time (ensemble) axis.
+    method : str
+        Filtering method (case-insensitive). One of:
+
+        - ``'poly'`` – Nth-degree polynomial regression subtraction using
+          orthogonal Legendre polynomials. ``n >= 0``; ``n = 0`` removes
+          the slow-time mean only.
+        - ``'dct'``  – Truncated DCT: removes the ``n`` lowest slow-time
+          frequency components. ``n >= 1``.
+        - ``'svd'``  – Truncated SVD: removes the top ``n`` singular
+          vectors (greatest singular values). ``n >= 1``.
+    n : int
+        Polynomial degree or number of low-frequency / singular-vector
+        components to remove (meaning depends on *method*).
+
+    Returns
+    -------
+    np.ndarray
+        Clutter-filtered signal, same shape as *SIG*.
+
+    Notes
+    -----
+    Translated from the MATLAB MUST toolbox (Damien Garcia, 2014–2023).
+
+    .. warning::
+        This Python port has not been fully tested.
+
+    See Also
+    --------
+    iq2doppler, rf2iq
     """
     logging.warning('NOTE GB: this code has not been tested!')
 

@@ -2,77 +2,73 @@ import numpy as np
 from . import utils
 
 
+# Documentation generated with Claude (claude-sonnet-4-6)
 def getparam(probe: str) -> utils.Param:
-    #GETPARAM   Get parameters of a uniform linear or convex array
-#   PARAM = GETPARAM opens a dialog box which allows you to select a
-#   transducer whose parameters are returned in PARAM.
+    """Return parameters for a named ultrasound transducer array.
 
-    #   PARAM = GETPARAM(PROBE), where PROBE is a string, returns the prameters
-#   of the transducer given by PROBE.
+    Parameters
+    ----------
+    probe : str
+        Transducer name (case-insensitive). Supported probes:
 
-    #   The structure PARAM is used in several functions of MUST (Matlab
-#   UltraSound Toolbox). The structure returned by GETPARAM contains only
-#   the fields that describe a transducer. Other fields may be required in
-#   some MUST functions.
+        Verasonics transducers:
+          - ``'L11-5v'``  — 128-element, 7.6 MHz linear array
+          - ``'L12-3v'``  — 192-element, 7.5 MHz linear array
+          - ``'C5-2v'``   — 128-element, 3.6 MHz convex array
+          - ``'P4-2v'``   — 64-element,  2.7 MHz phased array
 
-    #   PROBE can be one of the following:
-#   ---------------------------------
-#     1) 'L11-5v' (128-element, 7.6-MHz linear array)
-#     2) 'L12-3v' (192-element, 7.5-MHz linear array)
-#     3) 'C5-2v' (128-element, 3.6-MHz convex array)
-#     4) 'P4-2v' (64-element, 2.7-MHz phased array)
+        Other transducers:
+          - ``'PA4-2/20'``  — 64-element,  2.5 MHz phased array
+          - ``'L9-4/38'``   — 128-element, 5.0 MHz linear array
+          - ``'LA530'``     — 192-element, 3.0 MHz linear array
+          - ``'L14-5/38'``  — 128-element, 7.2 MHz linear array
+          - ``'L14-5W/60'`` — 128-element, 7.5 MHz linear array
+          - ``'P6-3'``      — 64-element,  4.5 MHz phased array
 
-    #   These are the <a
-#   href="matlab:web('https://verasonics.com/verasonics-transducers/')">Verasonics' transducers</a>.
-#   Feel free to complete this list for your own use.
+    Returns
+    -------
+    utils.Param
+        Transducer parameter object with the following attributes:
 
-    #   PARAM is a structure that contains the following fields:
-#   --------------------------------------------------------
-#   1) PARAM.Nelements: number of elements in the transducer array
-#   2) PARAM.fc: center frequency (in Hz)
-#   3) PARAM.pitch: element pitch (in m)
-#   4) PARAM.width: element width (in m)
-#   5) PARAM.kerf: kerf width (in m)
-#   6) PARAM.bandwidth: 6-dB fractional bandwidth (in #)
-#   7) PARAM.radius: radius of curvature (in m, Inf for a linear array)
-#   8) PARAM.focus: elevation focus (in m)
-#   9) PARAM.height: element height (in m)
+        - ``Nelements`` : number of elements in the array
+        - ``fc``        : center frequency (Hz)
+        - ``pitch``     : element pitch (m)
+        - ``width``     : element width (m)  *(when available)*
+        - ``kerf``      : kerf width (m)
+        - ``bandwidth`` : 6-dB fractional bandwidth (%)  *(when available)*
+        - ``radius``    : radius of curvature (m); ``np.inf`` for linear arrays  *(when available)*
+        - ``focus``     : elevation focus depth (m)  *(when available)*
+        - ``height``    : element height (m)  *(when available)*
 
+    Raises
+    ------
+    Exception
+        If ``probe`` does not match any known transducer name.
 
-    #   Example:
-#   -------
-#   #-- Generate a focused pressure field with a phased-array transducer
-#   # Phased-array @ 2.7 MHz:
-#   param = getparam('P4-2v');
-#   # Focus position:
-#   x0 = 2e-2; z0 = 5e-2;
-#   # TX time delays:
-#   dels = txdelay(x0,z0,param);
-#   # Grid:
-#   x = linspace(-4e-2,4e-2,200);
-#   z = linspace(param.pitch,10e-2,200);
-#   [x,z] = meshgrid(x,z);
-#   y = zeros(size(x));
-#   # RMS pressure field:
-#   P = pfield(x,y,z,dels,param);
-#   imagesc(x(1,:)*1e2,z(:,1)*1e2,20*log10(P/max(P(:))))
-#   hold on, plot(x0*1e2,z0*1e2,'k*'), hold off
-#   colormap hot, axis equal tight
-#   caxis([-20 0])
-#   c = colorbar;
-#   c.YTickLabel{end} = '0 dB';
-#   xlabel('[cm]')
+    Examples
+    --------
+    Generate a focused pressure field with a phased-array transducer:
 
+    >>> import numpy as np
+    >>> from pymust import getparam, txdelay, pfield
+    >>> param = getparam('P4-2v')          # 2.7 MHz phased array
+    >>> x0, z0 = 2e-2, 5e-2               # focus position
+    >>> dels = txdelay(x0, z0, param)      # TX time delays
+    >>> x = np.linspace(-4e-2, 4e-2, 200)
+    >>> z = np.linspace(param.pitch, 10e-2, 200)
+    >>> xx, zz = np.meshgrid(x, z)
+    >>> P = pfield(xx, np.zeros_like(xx), zz, dels, param)
 
-    #   This function is part of <a
-#   href="matlab:web('https://www.biomecardio.com/MUST')">MUST</a> (Matlab UltraSound Toolbox).
-#   MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
+    Notes
+    -----
+    Translated from the MATLAB MUST toolbox (Damien Garcia, 2015–2020).
+    Hardware parameters for Verasonics probes are sourced from
+    ``computeTrans.m`` (Verasonics, post-Aug 2019 version).
 
-    #   See also TXDELAY, PFIELD, SIMUS, GETPULSE.
-
-    #   -- Damien Garcia -- 2015/03, last update: 2020/07
-#   website: <a
-#   href="matlab:web('https://www.biomecardio.com')">www.BiomeCardio.com</a>
+    See Also
+    --------
+    txdelay, pfield, simus, getpulse
+    """
     param = utils.Param()
     probe = probe.upper()
 
