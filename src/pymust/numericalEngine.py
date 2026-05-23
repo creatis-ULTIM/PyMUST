@@ -33,8 +33,14 @@ class NumericalEngine:
         else:
             return x.detach().numpy()
         
+    def to_backend(self, x, **kwargs):
+        if self.isNumpy:
+            return x
+        else:
+            return self.backend.asarray(x, device=self.device, **kwargs)
+        
     def __deepcopy__(self, memo):
-        new = NumericalEngine(self.bakcend_name, self.device)
+        new = NumericalEngine(self.backend_name, self.device)
         memo[id(self)] = new
         return new
 

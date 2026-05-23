@@ -524,8 +524,6 @@ def pfield(x : numpy.ndarray,y : numpy.ndarray, z: numpy.ndarray,
     RP = 0 # % RP = Radiation Pattern
     if isSIMUS:
         #%- For SIMUS only (we need the full spectrum of RX signals):
-        # print(nSampling, param.NumberOfElements)
-        # breakpoint()
         SPECT = np.zeros((nSampling, param.Nelements), dtype = np.complex64)
     else:
         #%- For MKMOVIE only (we need the full spectrum of the pressure field):
@@ -622,6 +620,9 @@ def pfield(x : numpy.ndarray,y : numpy.ndarray, z: numpy.ndarray,
     # Make sure it is consistent, and all arrays are in the device, and the engine they should
     EXP = np.asarray(EXP, dtype = np.complex64)
     tmp = np.asarray(tmp, dtype = np.complex64)
+
+    # GB TODO: This is an ugly way of computing the gradients of the transmit delays and apodizations.
+    # 
     if gradientsTx:
         # This is to compute the gradients for the transmit
         if engine.backend_name != 'torch':

@@ -1,72 +1,59 @@
+# Documentation generated with Claude (claude-sonnet-4-6)
 from __future__ import annotations
 import numpy as np
 from . import utils
 
 def getpulse(param: utils.Param, way: int = 2, PreVel: str = 'pressure', dt: float = 1e-09) -> tuple[np.ndarray, np.ndarray]:
-    #GETPULSE   Get the transmit pulse
-#   PULSE = GETPULSE(PARAM,WAY) returns the one-way or two-way transmit
-#   pulse with a time sampling of 1 nanosecond. Use WAY = 1 to get the
-#   one-way pulse, or WAY = 2 to obtain the two-way (pulse-echo) pulse.
-    
-    #   PULSE = GETPULSE(PARAM,WAY,PRESVEL) returns the pulse in terms of
-#   Pressure or Velocity. PRESVEL can be:
-#       'pressure', which is the default
-#       'velocity3D' or 'velocity2D'
-    
-    #   PULSE = GETPULSE(PARAM) uses WAY = 1 and PRESVEL = 'pressure'.
-    
-    #   [PULSE,t] = GETPULSE(...) also returns the time vector.
-    
-    #   PARAM is a structure which must contain the following fields:
-#   ------------------------------------------------------------
-#   1) PARAM.fc: central frequency (in Hz, REQUIRED)
-#   2) PARAM.bandwidth: pulse-echo 6dB fractional bandwidth (in #)
-#            The default is 75#.
-#   3) PARAM.TXnow: number of wavelengths of the TX pulse (default: 1)
-#   4) PARAM.TXfreqsweep: frequency sweep for a linear chirp (default: [])
-#                         To be used to simulate a linear TX chirp.
-    
-    #   Example #1:
-#   ----------
-#   #-- Get the one-way pulse of a phased-array probe
-#   # Phased-array @ 2.7 MHz:
-#   param = getparam('P4-2v');
-#   # One-way transmit pulse
-#   [pulse,t] = getpulse(param);
-#   # Plot the pulse
-#   plot(t*1e6,pulse)
-#   xlabel('{\mu}s')
-#   axis tight
-    
-    #   Example #2:
-#   ----------
-#   #-- Check the pulse with a linear chirp
-#   # Linear array:
-#   param = getparam('L11-5v');
-#   # Modify the fractional bandwidth:
-#   param.bandwidth = 120;
-#   # Define the properties of the chirp
-#   param.TXnow = 20;
-#   param.TXfreqsweep = 10e6;
-#   # One-way transmit pulse
-#   [pulse,t] = getpulse(param);
-#   # Plot the pulse
-#   plot(t*1e6,pulse)
-#   xlabel('{\mu}s')
-#   axis tight
-    
-    
-    #   This function is part of <a
-#   href="matlab:web('https://www.biomecardio.com/MUST')">MUST</a> (Matlab UltraSound Toolbox).
-#   MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
-    
-    #   See also PFIELD, SIMUS, GETPARAM.
-    
-    #   -- Damien Garcia -- 2020/12, last update: 2021/05/26
-#   website: <a
-#   href="matlab:web('http://www.biomecardio.com')">www.BiomeCardio.com</a>
-    
-    
+    """Return the transmit pulse waveform for a given transducer.
+
+    Parameters
+    ----------
+    param : utils.Param
+        Transducer parameter structure with the following fields:
+
+        - ``fc``          : center frequency (Hz, required)
+        - ``bandwidth``   : pulse-echo 6 dB fractional bandwidth (%, default 75)
+        - ``TXnow``       : TX pulse length in wavelengths (default 1)
+        - ``TXfreqsweep`` : frequency sweep for a linear chirp (Hz, default None)
+    way : int, optional
+        ``1`` for one-way pulse, ``2`` for two-way pulse-echo (default 2).
+    PreVel : str, optional
+        Quantity to return: ``'pressure'`` (default), ``'velocity2D'``, or
+        ``'velocity3D'``.
+    dt : float, optional
+        Time sampling step (s, default 1 ns).
+
+    Returns
+    -------
+    pulse : np.ndarray
+        Normalised pulse waveform (peak amplitude = 1).
+    t : np.ndarray
+        Corresponding time vector (s).
+
+    Examples
+    --------
+    One-way pulse of a phased-array probe:
+
+    >>> param = getparam('P4-2v')
+    >>> pulse, t = getpulse(param, way=1)
+
+    Linear chirp pulse:
+
+    >>> param = getparam('L11-5v')
+    >>> param.bandwidth = 120
+    >>> param.TXnow = 20
+    >>> param.TXfreqsweep = 10e6
+    >>> pulse, t = getpulse(param, way=1)
+
+    Notes
+    -----
+    Translated from the MATLAB MUST toolbox (Damien Garcia, 2020–2021).
+
+    See Also
+    --------
+    pfield, simus, getparam
+    """
+
     assert way == 1 or way == 2,'WAY must be 1 (one-way) or 2 (two-way)'
     #-- Check PreVel
     PreVelValid = ['pressure','pres','velocity2d','velocity3d','vel2d','vel3d']
