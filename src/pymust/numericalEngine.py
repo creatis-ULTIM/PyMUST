@@ -31,6 +31,11 @@ class NumericalEngine:
             return x.detach().to('cpu').numpy()
         else:
             return x.detach().numpy()
+        
+    def __deepcopy__(self, memo):
+        new = NumericalEngine(self.bakcend_name, self.device)
+        memo[id(self)] = new
+        return new
 
 NumpyEngine = NumericalEngine() 
     
