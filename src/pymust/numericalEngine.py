@@ -32,6 +32,12 @@ class NumericalEngine:
         else:
             return x.detach().numpy()
         
+    def array(self, x, **kwargs):
+        if self.isNumpy:
+            return self.asarray(x, **kwargs)
+        else:
+            return self.backend.asarray(x, device=self.device, **kwargs)
+        
     def to_backend(self, x, **kwargs):
         if self.isNumpy:
             return x

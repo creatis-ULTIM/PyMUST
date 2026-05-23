@@ -1,8 +1,10 @@
+"""
+.. note:: Documentation auto-generated with Claude (claude-sonnet-4-6).
+"""
 import numpy as np
 from . import utils
 
 
-# Documentation generated with Claude (claude-sonnet-4-6)
 def getparam(probe: str) -> utils.Param:
     """Return parameters for a named ultrasound transducer array.
 

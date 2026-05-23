@@ -1,59 +1,59 @@
+"""
+.. note:: Documentation auto-generated with Claude (claude-sonnet-4-6).
+"""
 from __future__ import annotations
 import numpy as np,scipy, scipy.signal, typing
 from . import utils
+
 def iq2doppler(IQ: np.ndarray, param: utils.Param, M: typing.Union[int,np.ndarray] = 1, lag: int = 1) -> tuple[np.ndarray, np.ndarray]:
-    """
-    %IQ2DOPPLER   Convert I/Q data to color Doppler
-    %   VD = IQ2DOPPLER(IQ,PARAM) returns the Doppler velocities from the I/Q
-    %   time series using a slow-time autocorrelator.
-    %
-    %   PARAM is a structure that must contain the following fields:
-    %        a) PARAM.fc: center frequency (in Hz, REQUIRED)
-    %        b) PARAM.c: longitudinal velocity (in m/s, default = 1540 m/s)
-    %        c) PARAM.PRF (in Hz) or PARAM.PRP (in s):
-    %                pulse repetition frequency or period (REQUIRED)
-    %
-    %   VD = IQ2DOPPLER(IQ,PARAM,M):
-    %   - If M is of a two-component vector [M(1) M(2)], the output Doppler
-    %     velocity is estimated from the M(1)-by-M(2) neighborhood around the
-    %     corresponding pixel.
-    %   - If M is a scalar, then an M-by-M neighborhood is used.
-    %   - If M is empty, then M = 1.
-    %
-    %   VD = IQ2DOPPLER(IQ,PARAM,M,LAG) uses a lag of value LAG in the
-    %   autocorrelator. By default, LAG = 1.
-    %
-    %   [VD,VarD] = IQ2DOPPLER(...) also returns an estimated Doppler variance.
-    %
-    %   Important note:
-    %   --------------
-    %   IQ must be a 3-D complex array, where the real and imaginary parts
-    %   correspond to the in-phase and quadrature components, respectively. The
-    %   3rd dimension corresponds to the slow-time axis. IQ2DOPPLER uses a full
-    %   ensemble length to perform the auto-correlation, i.e. ensemble length
-    %   (or packet size) = size(IQ,3).
-    %
-    %
-    %   REFERENCE
-    %   ---------
-    %   If you find this function useful, you can cite the following paper.
-    %   Key references are included in the text of the function.
-    %
-    %   1) Madiena C, Faurie J, Porée J, Garcia D, Color and vector flow
-    %   imaging in parallel ultrasound with sub-Nyquist sampling. IEEE Trans
-    %   Ultrason Ferroelectr Freq Control, 2018;65:795-802.
-    %   <a
-    %   href="matlab:web('https://www.biomecardio.com/publis/ieeeuffc18a.pdf')">download PDF</a>
-    %
-    %
-    %   This function is part of MUST (Matlab UltraSound Toolbox).
-    %   MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
-    %
-    %   See also RF2IQ, WFILT.
-    %
-    %   -- Damien Garcia & Jonathan Porée -- 2015/01, last update: 2020/06/24
-    %   website: <a
-    %   href="matlab:web('https://www.biomecardio.com')">www.BiomeCardio.com</a>
+    """Convert I/Q data to color Doppler velocity and variance.
+
+    Estimates Doppler velocity using a slow-time autocorrelator (Kasai
+    estimator) on a 3-D complex I/Q array.
+
+    Parameters
+    ----------
+    IQ : np.ndarray
+        3-D complex array of shape ``(depth, elements, slow_time)``.
+        The real and imaginary parts are the in-phase and quadrature
+        components, respectively.  The full ensemble (3rd dimension) is used.
+    param : utils.Param
+        Parameter structure with the following fields:
+
+        - ``fc``  : center frequency (Hz, required)
+        - ``c``   : speed of sound (m/s, default 1540)
+        - ``PRF`` : pulse repetition frequency (Hz) **or**
+        - ``PRP`` : pulse repetition period (s) — one of the two is required
+    M : int or array-like, optional
+        Spatial averaging window:
+
+        - scalar *M* → M×M neighbourhood (default 1, no averaging)
+        - 2-element vector ``[M1, M2]`` → M1×M2 neighbourhood
+    lag : int, optional
+        Autocorrelation lag (default 1).
+
+    Returns
+    -------
+    vel : np.ndarray
+        Doppler velocity estimate (m/s), same spatial shape as ``IQ[:,:,0]``.
+    variance : np.ndarray
+        Doppler variance estimate (m²/s²), same shape as *vel*.
+
+    Notes
+    -----
+    Based on Eq. 55 in Loupas et al. (IEEE UFFC 42, 4; 1995).
+    Translated from the MATLAB MUST toolbox (Damien Garcia & Jonathan Porée,
+    2015–2020). MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
+
+    References
+    ----------
+    Madiena C, Faurie J, Porée J, Garcia D. Color and vector flow imaging in
+    parallel ultrasound with sub-Nyquist sampling. IEEE Trans Ultrason
+    Ferroelectr Freq Control, 2018;65:795-802.
+
+    See Also
+    --------
+    rf2iq, wfilt, getNyquistVelocity
     """
 
     if isinstance(M, int):

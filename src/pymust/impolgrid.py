@@ -1,76 +1,61 @@
+"""
+.. note:: Documentation auto-generated with Claude (claude-sonnet-4-6).
+"""
 import numpy as np, logging, typing
 from . import utils
+
 def impolgrid(siz: typing.Union[int, np.ndarray, list], zmax: float, width: float, param: utils.Param = None):
-    """
-    %IMPOLGRID   Polar-type grid for ultrasound images
-    %   IMPOLGRID returns a polar-type (fan-type) grid expressed in Cartesian
-    %   coordinates. This is a "natural" grid (before scan-conversion) used
-    %   when beamforming signals obtained with a cardiac phased array or a
-    %   convex array.
-    %
-    %   [X,Z] = IMPOLGRID(SIZ,ZMAX,WIDTH,PARAM) returns the X,Z coordinates of
-    %   the fan-type grid of size SIZ and angular width WIDTH (in rad) for a
-    %   phased array described by PARAM. The maximal Z (maximal depth) is ZMAX.
-    %
-    %   [X,Z] = IMPOLGRID(SIZ,ZMAX,PARAM) returns the X,Z coordinates of
-    %   the fan-type grid of size SIZ and angular width WIDTH (in rad) for a
-    %   convex array described by PARAM. For a convex array, PARAM.radius is
-    %   not Inf. The maximal Z (maximal depth) is ZMAX.
-    %
-    %   If SIZ is a scalar M, then the size of the grid is [M,M].
-    %
-    %   [X,Z,Z0] = IMPOLGRID(...) also returns the z-coordinate of the grid
-    %   origin. Note that X0 = 0.
-    %
-    %   Units: X,Z,Z0 are in m. WIDTH must be in rad.
-    %
-    %   PARAM is a structure which must contain the following fields:
-    %   ------------------------------------------------------------
-    %   1) PARAM.pitch: pitch of the array (in m, REQUIRED)
-    %   2) PARAM.Nelements: number of elements in the transducer array (REQUIRED)
-    %   3) PARAM.radius: radius of curvature (in m, default = Inf, linear array)
-    %
-    %
-    %   Examples:
-    %   --------
-    %   %-- Generate a focused pressure field with a phased-array transducer
-    %   % Phased-array @ 2.7 MHz:
-    %   param = getparam('P4-2v');
-    %   % Focus position:
-    %   xf = 2e-2; zf = 5e-2;
-    %   % TX time delays:
-    %   dels = txdelay(xf,zf,param);
-    %   % 60-degrees wide grid:
-    %   [x,z] = impolgrid([100 50],10e-2,pi/3,param);
-    %   % RMS pressure field:
-    %   P = pfield(x,z,dels,param);
-    %   % Scatter plot of the pressure field:
-    %   figure
-    %   scatter(x(:)*1e2,z(:)*1e2,5,20*log10(P(:)/max(P(:))),'filled')
-    %   colormap jet, axis equal ij tight
-    %   xlabel('cm'), ylabel('cm')
-    %   caxis([-20 0])
-    %   c = colorbar;
-    %   c.YTickLabel{end} = '0 dB';
-    %   % Image of the pressure field:
-    %   figure
-    %   pcolor(x*1e2,z*1e2,20*log10(P/max(P(:))))
-    %   shading interp
-    %   colormap hot, axis equal ij tight
-    %   xlabel('[cm]'), ylabel('[cm]')
-    %   caxis([-20 0])
-    %   c = colorbar;
-    %   c.YTickLabel{end} = '0 dB';
-    %
-    %
-    %   This function is part of MUST (Matlab UltraSound Toolbox).
-    %   MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
-    %
-    %   See also DAS, DASMTX, PFIELD.
-    %
-    %   -- Damien Garcia -- 2020/05, last update: 2022/03/30
-    %   website: <a
-    %   href="matlab:web('https://www.biomecardio.com')">www.BiomeCardio.com</a>
+    """Return a polar-type (fan-type) Cartesian grid for ultrasound imaging.
+
+    Generates the "natural" polar grid used when beamforming data from a
+    phased array or convex array (before scan-conversion).
+
+    Parameters
+    ----------
+    siz : int or array-like
+        Grid size ``[nrows, ncols]``.  A scalar *M* produces an *M×M* grid.
+    zmax : float
+        Maximum depth (m).
+    width : float
+        Angular width of the fan sector (rad). Ignored for convex arrays
+        (``PARAM.radius < inf``); the angular extent is derived from the array
+        geometry in that case.
+    param : utils.Param
+        Transducer parameter structure with the following fields:
+
+        - ``pitch``     : element pitch (m, required)
+        - ``Nelements`` : number of array elements (required)
+        - ``radius``    : radius of curvature (m, default ``np.inf`` for a
+          linear array)
+
+        For a convex array call ``impolgrid(siz, zmax, param)`` (omit *width*).
+
+    Returns
+    -------
+    x : np.ndarray
+        x-coordinates of grid points (m), shape ``siz``.
+    z : np.ndarray
+        z-coordinates of grid points (m), shape ``siz``.
+
+    Examples
+    --------
+    60-degree fan grid for a phased array:
+
+    >>> from pymust import getparam, txdelay, pfield, impolgrid
+    >>> import numpy as np
+    >>> param = getparam('P4-2v')
+    >>> dels = txdelay(2e-2, 5e-2, param)
+    >>> x, z = impolgrid([100, 50], 10e-2, np.pi/3, param)
+    >>> P = pfield(x, np.zeros_like(x), z, dels, param)
+
+    Notes
+    -----
+    Translated from the MATLAB MUST toolbox (Damien Garcia, 2020–2022).
+    MUST (c) 2020 Damien Garcia, LGPL-3.0-or-later
+
+    See Also
+    --------
+    dasmtx, pfield, txdelay
     """
     noWidth = False
 

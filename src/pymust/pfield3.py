@@ -1,31 +1,10 @@
-import numpy as np
-from . import utils
+import numpy 
+from . import utils, numericalEngine
 
-# Ugly optimisation trick, of loop unraveling, as np.mean/np.sum has a large overhead for iterating over few dimesions
-# for i in range(1, 10):
-#   r = '+'.join([f'X[...,{j}]' for j in range(i)])
-#   print(f'average_function_by_i[{i}] = lambda X: ({r})/{i}')
-average_function_by_i = [None] * 10
-average_function_by_i[1] = lambda X: (X[...,0])/1
-average_function_by_i[2] = lambda X: (X[...,0]+X[...,1])/2
-average_function_by_i[3] = lambda X: (X[...,0]+X[...,1]+X[...,2])/3
-average_function_by_i[4] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3])/4
-average_function_by_i[5] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4])/5
-average_function_by_i[6] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5])/6
-average_function_by_i[7] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6])/7
-average_function_by_i[8] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6]+X[...,7])/8
-average_function_by_i[9] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6]+X[...,7]+X[...,8])/9
-
-def average_over_last_axis(X):
-    if X.shape[-1] < len(average_function_by_i):
-        return average_function_by_i[X.shape[-1] ](X)
-    else:
-        return np.mean(X, axis = -1)
-
-eps = np.finfo(np.float32).eps
-mysinc = lambda x = None: np.sin(np.abs(x) + eps)/ (np.abs(x) + eps) # [note: In MATLAB/numpy, sinc is sin(pi*x)/(pi*x)]
+eps = numpy.finfo(numpy.float32).eps
  
-def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, param: utils.Param, isQuick: bool = False, options: utils.Options = None):
+def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: numpy.ndarray, param: utils.Param, 
+            isQuick: bool = False, options: utils.Options = None, engine : numericalEngine.NumericalEngine = numericalEngine.NumpyEngine) -> numpy.ndarray:
     """
     PFIELD3   3-D RMS acoustic pressure field of a planar 2-D array
     RP = PFIELD3(X,Y,Z,DELAYS,PARAM) returns the three-dimensional
@@ -209,6 +188,9 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
     5) There is yet no publication for PFIELD3 (it is planned for 2023-24).
     """
 
+    np = engine.backend if engine is not None else numericalEngine.NumpyEngine.backend
+    mysinc = lambda x = None: np.sin(np.abs(x) + eps)/ (np.abs(x) + eps) # [note: In MATLAB/numpy, sinc is sin(pi*x)/(pi*x)]
+
     if x is None or (isinstance(x, list) and len(x) == 0):
         x =  np.array([])
     if y is None or (isinstance(y, list) and len(y) == 0):
@@ -244,7 +226,7 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
     #delaysTX  should be a row vector
     if len(delaysTX.shape) == 1:
         delaysTX = delaysTX.reshape((1, -1), order='F')
-    delaysTX = delaysTX.astype(np.float32)
+    delaysTX = engine.to_backend(delaysTX, dtype = np.float32)
     
     # Check if PFIELD3 is called by SIMUS3
     isSIMUS3 = False
@@ -312,18 +294,19 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
         alpha_dB = 0
     else:
         alpha_dB = param.attenuation
-        assert np.isscalar(alpha_dB) and utils.isnumeric(alpha_dB) and alpha_dB>=0, 'PARAM.attenuation must be a nonnegative scalar'
+        assert numpy.isscalar(alpha_dB) and utils.isnumeric(alpha_dB) and alpha_dB>=0, 'PARAM.attenuation must be a nonnegative scalar'
 
     #-- 9) Transmit apodization (no unit)
     if  'TXapodization' not in param:
         param.TXapodization = np.ones((1,NumberOfElements), dtype = np.float32)
     else:
         if isinstance(param.TXapodization, np.ndarray) and len(param.TXapodization.shape) == 1:
-            param.TXapodization = param.TXapodization.reshape((1, -1), order='F')
+            param.TXapodization = utils.reshape_fortran(param.TXapodization,((1, -1)))
         assert (len(param.TXapodization.shape) == 2 and param.TXapodization.shape[0] == 1) and utils.isnumeric(param.TXapodization), 'PARAM.TXapodization must be a vector'
         assert param.TXapodization.shape[1]==NumberOfElements, 'PARAM.TXapodization must be of length = (number of elements)'
 
     # apodization is 0 where TX delays are NaN:
+    delaysTX = np.asarray(delaysTX) 
     idx = np.isnan(delaysTX)
     param.TXapodization[0, np.any(idx, axis = 0)]= 0
     delaysTX[idx] = 0
@@ -333,14 +316,14 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
         param.TXnow = 1
 
     NoW = param.TXnow
-    assert np.isscalar(NoW) and utils.isnumeric(NoW) and NoW>0, 'PARAM.TXnow must be a positive scalar.'
+    assert numpy.isscalar(NoW) and utils.isnumeric(NoW) and NoW>0, 'PARAM.TXnow must be a positive scalar.'
 
     #-- 11) TX pulse: Frequency sweep for a linear chirp
     if 'TXfreqsweep' not in param or np.isinf(NoW):
         param.TXfreqsweep = None
 
     FreqSweep = param.TXfreqsweep
-    assert FreqSweep is None or (np.isscalar(FreqSweep) and utils.isnumeric(FreqSweep) and FreqSweep>0), 'PARAM.TXfreqsweep must be empty (windowed sine) or a positive scalar (linear chirp).'
+    assert FreqSweep is None or (numpy.isscalar(FreqSweep) and utils.isnumeric(FreqSweep) and FreqSweep>0), 'PARAM.TXfreqsweep must be empty (windowed sine) or a positive scalar (linear chirp).'
 
     # DR: Possibly add explanation of casting RC to single precision
     if options.RC is not None and len(options.RC):
@@ -433,9 +416,9 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
     nx = np.prod(x.shape)
     
     #-- Coordinates of the points where pressure is needed
-    x = x.reshape((-1,1), order='F')
-    y = y.reshape((-1,1), order='F')
-    z = z.reshape((-1,1), order='F')
+    x = utils.reshape_fortran(x, (-1, 1)) 
+    y = utils.reshape_fortran(y, (-1, 1)) 
+    z = utils.reshape_fortran(z, (-1, 1)) 
 
     # cast x, y, and z to single class
     x = x.astype(np.float32)
@@ -454,8 +437,8 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
     SegHeight = ElementHeight/N
     yi = -ElementHeight/2 + SegHeight/2 + np.arange(N)*SegHeight
     xi,yi = np.meshgrid(xi,yi)
-    xi = xi.reshape((1, 1,M*N), order='F')
-    yi = yi.reshape((1, 1,M*N), order='F')
+    xi = utils.reshape_fortran(xi, (1, 1,M*N))
+    yi = utils.reshape_fortran(yi, (1, 1,M*N))
 
     #-- Out-of-field points
     # Null pressure will be assigned to out-of-field points.
@@ -471,10 +454,10 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
     #       cosP = cosine phi.
     #       They are of size [numel(x) NumberOfElements M*N].
     #
-    dxi = x.reshape((-1,1,1), order='F')-xi-xe.reshape((1, -1, 1), order='F')
-    dyi = y.reshape((-1,1,1), order='F')-yi-ye.reshape((1, -1, 1), order='F')
+    dxi = utils.reshape_fortran(x, (-1,1,1))-utils.reshape_fortran(xi, (1, 1,M*N))-utils.reshape_fortran(xe, (1, -1, 1))
+    dyi = utils.reshape_fortran(y, (-1,1,1))-utils.reshape_fortran(yi, (1, 1,M*N))-utils.reshape_fortran(ye, (1, -1, 1))
     d2 = dxi**2+dyi**2
-    r = np.sqrt(d2+z.reshape((-1,1,1), order='F')**2).astype(np.float32)
+    r = np.sqrt(d2+utils.reshape_fortran(z, (-1,1,1))**2).astype(np.float32)
 
     eps_sp = np.finfo(np.float32).eps
     cosT = (np.expand_dims(z,axis=1)+eps_sp)/(r+eps_sp) # DR : expand dimensions to match the shape of r
@@ -647,16 +630,16 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
         #--
         if isFFD: # isFFD = true -> frequency-dependent directivity
             #TODO: CHECK THIS IS CORRECT
-            RPmono =  average_over_last_axis(DIR*EXP) # summation over the M*N small segments
+            RPmono =  utils.average_over_last_axis(DIR*EXP) # summation over the M*N small segments
         else: # isFFD = false: the directivity depends on center frequency only
             # note: the directivity (DIR) has already been included in EXP
             if M*N>1:
-                RPmono = average_over_last_axis(EXP) # summation over the M*N small segments
+                RPmono = utils.average_over_last_axis(EXP) # summation over the M*N small segments
             else:
                 RPmono = EXP
 
         if len(RPmono.shape) == 3 and RPmono.shape[2] == 1:
-            RPmono = RPmono.reshape((RPmono.shape[0],RPmono.shape[1]), order='F')
+            RPmono = utils.reshape_fortran(RPmono, (RPmono.shape[0],RPmono.shape[1]))
 
 
         #-- Transmit delays + Transmit apodization
@@ -666,8 +649,7 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
         DELAPOD = np.sum(np.exp(1j*kw*c*delaysTX), 0) *APOD
 
         #-- Summing the radiation patterns generating by all the elements
-        RPk = RPmono@DELAPOD.reshape((-1, 1), order='F')
-
+        RPk = RPmono@utils.reshape_fortran(DELAPOD, (-1,1)) 
         #- include spectrum responses:
         RPk = pulseSPECT[k]*RPk* probeSPECT[k]
 
@@ -677,7 +659,10 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
         if isSIMUS3: # Receive: for SIMUS3 only (spectra of the RF signals)
             SPECT[k,:] = probeSPECT[k]  # the array bandwidth is considered
 
-            SPECT[k,:] *= ((RPk.flatten(order='F')*options.RC.flatten(order='F')).reshape((1, -1), order='F') @ RPmono).flatten(order='F')  # pressure received by the elements)
+            #SPECT[k,:] *= ((RPk.flatten(order='F')*options.RC.flatten(order='F')).reshape((1, -1), order='F') @ RPmono).flatten(order='F')  # pressure received by the elements)
+            RPK_RC = (utils.reshape_fortran(RPk, (1, -1))*utils.reshape_fortran(options.RC, (1, -1)))
+            SPECT[k,:] *= utils.reshape_fortran(RPK_RC @ RPmono, (-1, 1))
+
             # SPECT[k, :] *= np.dot(RPk.flatten()*options.RC.flatten(), RPmono ) # Trying to see if it is faster, no evidence whatsoever
             # *f(k)^2/fc^2; Rayleigh scattering (OPTIONAL)
 
@@ -686,7 +671,7 @@ def pfield3(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray, p
         else:  # using PFIELD3 alone
             RP = RP + abs(RPk)**2 # acoustic intensity
 
-            SPECT[k,:] = RPk.flatten(order='F')
+            SPECT[k,:] = utils.reshape_fortran(RPk, -1)
 
 
     #%------------------------------------%

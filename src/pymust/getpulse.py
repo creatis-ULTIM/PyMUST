@@ -1,4 +1,6 @@
-# Documentation generated with Claude (claude-sonnet-4-6)
+"""
+.. note:: Documentation auto-generated with Claude (claude-sonnet-4-6).
+"""
 from __future__ import annotations
 import numpy as np
 from . import utils

@@ -443,3 +443,37 @@ def getDopplerColorMap():
 
 def applyDasMTX(M, IQ, imageShape):
     return (M @ IQ.flatten(order = 'F')).reshape(imageShape, order = 'F')
+
+
+# Ugly optimisation trick, of loop unraveling, as np.mean/np.sum has a large overhead for iterating over few dimesions
+# for i in range(1, 10):
+#   r = '+'.join([f'X[...,{j}]' for j in range(i)])
+#   print(f'average_function_by_i[{i}] = lambda X: ({r})/{i}')
+average_function_by_i = [None] * 10
+average_function_by_i[1] = lambda X: (X[...,0])/1
+average_function_by_i[2] = lambda X: (X[...,0]+X[...,1])/2
+average_function_by_i[3] = lambda X: (X[...,0]+X[...,1]+X[...,2])/3
+average_function_by_i[4] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3])/4
+average_function_by_i[5] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4])/5
+average_function_by_i[6] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5])/6
+average_function_by_i[7] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6])/7
+average_function_by_i[8] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6]+X[...,7])/8
+average_function_by_i[9] = lambda X: (X[...,0]+X[...,1]+X[...,2]+X[...,3]+X[...,4]+X[...,5]+X[...,6]+X[...,7]+X[...,8])/9
+
+def average_over_last_axis(X):
+    if X.shape[-1] < len(average_function_by_i):
+        return average_function_by_i[X.shape[-1] ](X)
+    else:
+        return X.mean(-1) # Do not put the keyword so it is compaatible with torch and numpy
+
+def reshape_fortran(x, shape):
+    """
+    A bit weird function for reshaping using Fortran order, just to make sure it works for both numpy as torch tensors.
+    """
+    if isinstance(x, np.ndarray):
+        return x.reshape(shape, order = 'F')
+    else:
+        # Works for torch tensors
+        if len(x.shape) > 0:
+            x = x.permute(*reversed(range(len(x.shape))))
+        return x.reshape(*reversed(shape)).permute(*reversed(range(len(shape))))
