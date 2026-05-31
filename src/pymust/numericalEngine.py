@@ -26,7 +26,7 @@ class NumericalEngine:
             raise ValueError('Unsupported backend')
         
     def to_numpy(self, x):
-        if self.isNumpy:
+        if self.isNumpy or isinstance(x, numpy.ndarray):
             return x
         elif self.device != 'cpu':
             return x.detach().to('cpu').numpy()
@@ -35,7 +35,7 @@ class NumericalEngine:
         
     def array(self, x, **kwargs):
         if self.isNumpy:
-            return self.asarray(x, **kwargs)
+            return self.backend.asarray(x, **kwargs)
         else:
             return self.backend.asarray(x, device=self.device, **kwargs)
         

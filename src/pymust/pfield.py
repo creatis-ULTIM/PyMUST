@@ -421,7 +421,7 @@ def pfield(x : numpy.ndarray,y : numpy.ndarray, z: numpy.ndarray,
             # GB WARNING: Dummy code, since meta device has no values and it is not possible to compute. Just to avoid a crash
             df = c/0.1
         else:
-            df = 1/(engine.to_numpy(np.max(r)/c) + numpy.max(delaysTX))
+            df = 1/(engine.to_numpy(np.max(r)/c) + np.max(delaysTX.nan_to_num(-1)))
 
         df = options.FrequencyStep*df
         #% note: df is here an upper bound; it will be recalculated below
@@ -522,7 +522,8 @@ def pfield(x : numpy.ndarray,y : numpy.ndarray, z: numpy.ndarray,
    # %-- EXPONENTIAL arrays of size [numel(x) NumberOfElements M]
     kw = 2*np.pi*f[0]/c # % wavenumber
     kwa = alpha_dB/8.69*f[0]/1e6*1e2 # % attenuation-based wavenumber
-    EXP = np.asarray(np.exp(-kwa*r + (kw*r*1j)), dtype = np.complex64) #; % faster than exp(-kwa*r+1j*kw*r)
+    # TODO GB: need to add the mod, can't do it since it is not in torch
+    EXP = np.asarray(np.exp(-kwa*r + 1j *np.remainder(kw*r,2*np.pi)), dtype = np.complex64) #; % faster than exp(-kwa*r+1j*kw*r)
     #%-- Exponential array for the increment wavenumber dk
     dkw = 2*np.pi*df/c
     dkwa = alpha_dB/8.69*df/1e6*1e2
@@ -594,13 +595,13 @@ def pfield(x : numpy.ndarray,y : numpy.ndarray, z: numpy.ndarray,
         if engine.backend_name != 'torch':
             raise ValueError('When using gradients, only torch engine is allowed.')
         delaysTX = np.torch.asarray(delaysTX, dtype = np.float32, requires_grad=True)
-        APOD = np.torch.asarray(param.TXapodization.flatten(), dtype = np.float32, requires_grad=True)
+        APOD = np.torch.asarray(param.TXapodization.reshape(-1), dtype = np.float32, requires_grad=True)
         extra_outputs['delaysTX'] = delaysTX
         extra_outputs['APOD'] = APOD
 
     else:
         delaysTX = np.asarray(delaysTX, dtype = np.float32)
-        APOD = np.asarray(param.TXapodization.flatten(), dtype = np.float32)
+        APOD = np.asarray(param.TXapodization.reshape(-1), dtype = np.float32)
 
 
 

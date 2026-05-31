@@ -214,7 +214,10 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     assert x.shape == y.shape and y.shape == z.shape, 'X, Y, and Z must be of same size.'
 
     #Check the transmit delays
-    assert utils.isnumeric(delaysTX) and all(delaysTX[~np.isnan(delaysTX)]>=0),'DELAYS must be a nonnegative array.'
+    delaysTX_np = engine.to_numpy(delaysTX)
+    assert utils.isnumeric(delaysTX_np) and all(delaysTX_np[~numpy.isnan(delaysTX_np)]>=0),'DELAYS must be a nonnegative array.'
+
+    delaysTX = engine.to_backend(delaysTX_np, dtype = np.float32)
 
     NumberOfElements = delaysTX.shape[1]
     # Note: param.Nelements can be required in other functions of the
@@ -254,12 +257,12 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     #-- 3) Element width (in m)
     assert 'width' in param, 'An element width (PARAM.width) is required.'
     ElementWidth = param.width
-    assert utils.isnumeric(ElementWidth) and np.isscalar(ElementWidth) and ElementWidth>0, 'The element width must be positive.'
+    assert utils.isnumeric(ElementWidth) and numpy.isscalar(ElementWidth) and ElementWidth>0, 'The element width must be positive.'
 
     #-- 4) Element height (in m)
     assert 'height' in param, 'An element height (PARAM.height) is required with PFIELD3 and SIMUS3.'
     ElementHeight = param.height
-    assert utils.isnumeric(ElementHeight) and np.isscalar(ElementHeight) and ElementHeight>0,'The element height must be positive.'
+    assert utils.isnumeric(ElementHeight) and numpy.isscalar(ElementHeight) and ElementHeight>0,'The element height must be positive.'
 
     #-- 5) Fractional bandwidth at -6dB (in %)
     if 'bandwidth' not in param:
@@ -276,7 +279,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
         NonRigidBaffle = False
     elif param.baffle == 'soft':
         NonRigidBaffle = True
-    elif np.isscalar(param.baffle):
+    elif numpy.isscalar(param.baffle):
         assert param.baffle>0, 'The "baffle" field scalar must be positive'
         NonRigidBaffle = True
     else:
@@ -300,7 +303,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     if  'TXapodization' not in param:
         param.TXapodization = np.ones((1,NumberOfElements), dtype = np.float32)
     else:
-        if isinstance(param.TXapodization, np.ndarray) and len(param.TXapodization.shape) == 1:
+        if isinstance(param.TXapodization, np.array) and len(param.TXapodization.shape) == 1:
             param.TXapodization = utils.reshape_fortran(param.TXapodization,((1, -1)))
         assert (len(param.TXapodization.shape) == 2 and param.TXapodization.shape[0] == 1) and utils.isnumeric(param.TXapodization), 'PARAM.TXapodization must be a vector'
         assert param.TXapodization.shape[1]==NumberOfElements, 'PARAM.TXapodization must be of length = (number of elements)'
@@ -346,7 +349,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     if 'dBThresh' not in options:
         options.dBThresh = -60 # default is -60dB in PFIELD3
 
-    assert np.isscalar(options.dBThresh) and utils.isnumeric(options.dBThresh) and options.dBThresh<=0,'OPTIONS.dBThresh must be a nonpositive scalar.'
+    assert numpy.isscalar(options.dBThresh) and utils.isnumeric(options.dBThresh) and options.dBThresh<=0,'OPTIONS.dBThresh must be a nonpositive scalar.'
 
     #-- 2) Frequency-dependent directivity?
     if utils.isfield(options,'FullFrequencyDirectivity'):
@@ -356,7 +359,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
         # By default, the directivity of the elements depends on the center
         # frequency only. This makes the algorithm faster. 
 
-    assert np.isscalar(isFFD) and isinstance(isFFD, bool) ,'OPTIONS.FullFrequencyDirectivity must be a logical scalar (true or false).'
+    assert numpy.isscalar(isFFD) and isinstance(isFFD, bool) ,'OPTIONS.FullFrequencyDirectivity must be a logical scalar (true or false).'
 
     #-- 3) Element splitting
     #
@@ -370,17 +373,17 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
         assert len(options.ElementSplitting) == 2, 'OPTIONS.ElementSplitting must be a two-element vector.'
         M = int(options.ElementSplitting[0])
         N = int(options.ElementSplitting[1])
-        assert np.isscalar(M) and M==np.round(M) and M>0 and np.isscalar(N) and N==np.round(N) and N>0, 'OPTIONS.ElementSplitting must contain two positive integers.'
+        assert numpy.isscalar(M) and M==numpy.round(M) and M>0 and numpy.isscalar(N) and N==numpy.round(N) and N>0, 'OPTIONS.ElementSplitting must contain two positive integers.'
     else:
         LambdaMin = c/(fc*(1+param.bandwidth/200))
-        M = int(np.ceil(ElementWidth/LambdaMin))
-        N = int(np.ceil(ElementHeight/LambdaMin))
+        M = int(numpy.ceil(ElementWidth/LambdaMin))
+        N = int(numpy.ceil(ElementHeight/LambdaMin))
 
     #-- 4) Wait bar NOTE GB: this does not do nothing yet
     if not utils.isfield(options,'WaitBar'):
         options.WaitBar = True
 
-    assert np.isscalar(options.WaitBar) and utils.islogical(options.WaitBar), 'OPTIONS.WaitBar must be a logical scalar (true or false).'
+    assert numpy.isscalar(options.WaitBar) and utils.islogical(options.WaitBar), 'OPTIONS.WaitBar must be a logical scalar (true or false).'
 
     #-- Advanced (masked) options: Frequency step (scaling factor)
     # The frequency step is determined automatically. It is tuned to avoid
@@ -391,7 +394,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     if not utils.isfield(options,'FrequencyStep'):
         options.FrequencyStep = 1
 
-    assert np.isscalar(options.FrequencyStep) and utils.isnumeric(options.FrequencyStep) and options.FrequencyStep>0, 'OPTIONS.FrequencyStep must be a positive scalar.'
+    assert numpy.isscalar(options.FrequencyStep) and utils.isnumeric(options.FrequencyStep) and options.FrequencyStep>0, 'OPTIONS.FrequencyStep must be a positive scalar.'
 
     #%------------------------------------%
     #% END of Check the OPTIONS structure %
@@ -413,7 +416,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
         siz0 = (x.shape[0], 1)
     else:
         siz0 = x.shape
-    nx = np.prod(x.shape)
+    nx = numpy.prod(x.shape)
     
     #-- Coordinates of the points where pressure is needed
     x = utils.reshape_fortran(x, (-1, 1)) 
@@ -421,9 +424,9 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     z = utils.reshape_fortran(z, (-1, 1)) 
 
     # cast x, y, and z to single class
-    x = x.astype(np.float32)
-    y = y.astype(np.float32)
-    z = z.astype(np.float32)
+    x = engine.array(x, dtype=np.float32)
+    y = engine.array(y, dtype=np.float32)
+    z = engine.array(z, dtype=np.float32)
 
     #-- Centroids of the sub-elements
     #-- note: Each elements is split into M-by-N sub-elements.
@@ -436,7 +439,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     xi = -ElementWidth/2 + SegWidth/2 + np.arange(M)*SegWidth
     SegHeight = ElementHeight/N
     yi = -ElementHeight/2 + SegHeight/2 + np.arange(N)*SegHeight
-    xi,yi = np.meshgrid(xi,yi)
+    xi,yi = np.meshgrid(xi,yi, indexing="ij")
     xi = utils.reshape_fortran(xi, (1, 1,M*N))
     yi = utils.reshape_fortran(yi, (1, 1,M*N))
 
@@ -457,7 +460,8 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     dxi = utils.reshape_fortran(x, (-1,1,1))-utils.reshape_fortran(xi, (1, 1,M*N))-utils.reshape_fortran(xe, (1, -1, 1))
     dyi = utils.reshape_fortran(y, (-1,1,1))-utils.reshape_fortran(yi, (1, 1,M*N))-utils.reshape_fortran(ye, (1, -1, 1))
     d2 = dxi**2+dyi**2
-    r = np.sqrt(d2+utils.reshape_fortran(z, (-1,1,1))**2).astype(np.float32)
+    r = np.sqrt(d2+utils.reshape_fortran(z, (-1,1,1))**2)
+    r = engine.array(r, dtype=np.float32)
 
     eps_sp = np.finfo(np.float32).eps
     cosT = (np.expand_dims(z,axis=1)+eps_sp)/(r+eps_sp) # DR : expand dimensions to match the shape of r
@@ -502,7 +506,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
         # One has exp[-i(k r + w delay)] = exp[-2i pi(f r/c + f delay)] in the Eq.
         # One wants: the phase increment 2pi(df r/c + df delay) be < 2pi.
         # Therefore: df < 1/(r/c + delay).
-        df = 1/(np.max(r/c) + np.nanmax(delaysTX))
+        df = 1/(np.max(r/c) + np.max(np.nan_to_num(delaysTX,-1))) # add a small value to avoid division by 0
         df = options.FrequencyStep*df
         # note: df is here an upper bound; it will be recalculated below
         param.df = df
@@ -512,7 +516,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     f = np.linspace(0,2*param.fc,Nf) # frequency samples
     df = f[1]  # update the frequency step
     #-- we keep the significant components only by using options.dBThresh
-    S = np.abs(pulseSpectrum(2*np.pi*f)*probeSpectrum(2*np.pi*f))
+    S = np.abs(engine.to_backend(pulseSpectrum(2*np.pi*f))*engine.to_backend(probeSpectrum(2*np.pi*f)))
 
     GdB = 20*np.log10(1e-200 + S/np.max(S)) # gain in dB
     id = np.where(GdB>options.dBThresh)
@@ -534,8 +538,8 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     # f = f+Fc-fc
 
     #-- we need VECTORS
-    pulseSPECT = pulseSpectrum(2*np.pi*f) # pulse spectrum
-    probeSPECT = probeSpectrum(2*np.pi*f) # probe response
+    pulseSPECT = engine.to_backend(pulseSpectrum(2*np.pi*f)) # pulse spectrum
+    probeSPECT = engine.to_backend(probeSpectrum(2*np.pi*f)) # probe response
 
     #%--------------------------%
     #% end of FREQUENCY SPECTRA %
@@ -572,17 +576,18 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     #-- EXPONENTIAL arrays of size [numel(x) NumberOfElements M]
     kw = 2*np.pi*f[0]/c # wavenumber
     kwa = alpha_dB/8.69*f[0]/1e6*1e2 # attenuation-based wavenumber
-    EXP = np.exp(-kwa*r + 1j*np.mod(kw*r,2*np.pi)).astype(np.complex64) # faster than exp(-kwa*r+1j*kw*r)
+    EXP = np.exp(-kwa*r + 1j*np.remainder(kw*r,2*np.pi))
+    EXP = np.asarray(EXP, dtype = np.complex64) # faster than exp(-kwa*r+1j*kw*r)
     #-- Exponential array for the increment wavenumber dk
     dkw = 2*np.pi*df/c
     dkwa = alpha_dB/8.69*df/1e6*1e2
-    EXPdf = np.exp((-dkwa + 1j*dkw)*r).astype(np.complex64)
+    EXPdf = np.asarray( np.exp((-dkwa + 1j*dkw)*r), dtype = np.complex64)
 
     #-- We replace EXP by EXP*ObliFac/r
     EXP = EXP*ObliFac/r
 
     #-- TX apodization
-    APOD = param.TXapodization.flatten(order='F')
+    APOD = utils.reshape_fortran( param.TXapodization, (-1,)) 
 
     #-- Simplified directivity (if not dependent on frequency)
     # In the "simplified directivity" version, the directivities of the
@@ -601,7 +606,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     #%-----------------------------%
     #% SUMMATION OVER THE SPECTRUM %
     #%-----------------------------%
-    EXP = EXP.astype(np.complex64)
+    EXP = np.asarray(EXP, dtype = np.complex64)
 
     # TODO GB: process several frequencies at the same time might remove some overhead of numpy calls
 
@@ -650,6 +655,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
 
         #-- Summing the radiation patterns generating by all the elements
         RPk = RPmono@utils.reshape_fortran(DELAPOD, (-1,1)) 
+
         #- include spectrum responses:
         RPk = pulseSPECT[k]*RPk* probeSPECT[k]
 
@@ -669,9 +675,9 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
             if np.any(param.RXdelay != 0): # reception delays, if any
                 SPECT[k,:] = SPECT[k,:] *np.exp(1j*kw*c*param.RXdelay)
         else:  # using PFIELD3 alone
-            RP = RP + abs(RPk)**2 # acoustic intensity
+            RP = RP + np.abs(RPk)**2 # acoustic intensity
 
-            SPECT[k,:] = utils.reshape_fortran(RPk, -1)
+            SPECT[k,:] = utils.reshape_fortran(RPk, (-1,) )
 
 
     #%------------------------------------%
@@ -679,7 +685,7 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
     #%------------------------------------%
 
     # Correcting factor (including integration step, df)
-    if np.isinf(NoW):
+    if numpy.isinf(NoW):
         CorFac = 1
     else:
         CorFac = df
@@ -689,8 +695,8 @@ def pfield3(x: numpy.ndarray, y: numpy.ndarray, z: numpy.ndarray, delaysTX: nump
 
     # RMS acoustic pressure (if we are in PFIELD3 only)
     if not isSIMUS3:
-        RP =np.sqrt(RP).reshape(siz0, order='F')
+        RP =utils.reshape_fortran( np.sqrt(RP),siz0,)
         SPECT = np.moveaxis(SPECT, 0, -1)
-        SPECT = SPECT.reshape([siz0[0], siz0[1], siz0[2], nSampling], order='F')
+        SPECT = utils.reshape_fortran(SPECT, [siz0[0], siz0[1], siz0[2], nSampling])
 
     return RP, SPECT, IDX
