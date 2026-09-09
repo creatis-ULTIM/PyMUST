@@ -1,6 +1,6 @@
 import numpy as np, scipy, scipy.interpolate, multiprocessing, multiprocessing.pool
 from abc import ABC
-import inspect, matplotlib, pickle, os, matplotlib.pyplot as plt, copy
+import inspect, matplotlib, pickle, os, matplotlib.pyplot as plt, copy, warnings
 from collections import deque
 
 
@@ -11,18 +11,23 @@ class dotdict(dict, ABC):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     def ignoreCaseInFieldNames(self):
-        """Convert all field names to lower case"""
+        """Normalize field names to their canonical casing (case-insensitive aliasing).
+
+        Uses setattr/getattr (not raw dict access) so that on subclasses where a
+        canonical name is backed by a property (e.g. Param's deprecated flat
+        aliases), the value is correctly routed through that property instead of
+        being dropped into an orphaned dict entry.
+        """
         names = self.names
-        todelete =[]
-        for k, v in self.items():
-            if k.lower() in names and k in names:
-                if k.lower() == k:
-                    continue
-                elif names[k] in self:
-                    raise ValueError(f'Repeated key {k}')
-                else:
-                    self[names[k]] = v
-                    todelete.append(k)
+        todelete = []
+        for k in list(self.keys()):
+            canonical = names.get(k.lower())
+            if canonical is None or k == canonical:
+                continue
+            if canonical in self:
+                raise ValueError(f'Repeated key {k}')
+            setattr(self, canonical, self[k])
+            todelete.append(k)
         for k in todelete:
             del self[k]
         return self
@@ -75,15 +80,353 @@ class Options(dotdict):
         idx[-1, 1] = N
         return idx
 
+class MediumParams:
+    """Acoustic medium properties (PARAM.medium)."""
+    def __init__(self):
+        self.c = None            # speed of sound (m/s), default 1540
+        self.attenuation = None  # attenuation coefficient (dB/cm/MHz), default 0
+        self.rho = None          # density (kg/m^3), default 1050
+        self.beta = None         # nonlinearity parameter, default 4.5 (soft tissue)
+
+    def check(self):
+        if self.c is None:
+            self.c = 1540
+        assert isnumeric(self.c) and np.isscalar(self.c) and self.c > 0, \
+            'PARAM.medium.c must be a positive scalar.'
+
+        if self.attenuation is None:
+            self.attenuation = 0
+        assert isnumeric(self.attenuation) and np.isscalar(self.attenuation) and self.attenuation >= 0, \
+            'PARAM.medium.attenuation must be a nonnegative scalar.'
+
+        if self.rho is None:
+            self.rho = 1050
+        assert isnumeric(self.rho) and np.isscalar(self.rho) and self.rho > 0, \
+            'PARAM.medium.rho must be a positive scalar.'
+
+        if self.beta is None:
+            self.beta = 4.5
+        assert isnumeric(self.beta) and np.isscalar(self.beta) and self.beta >= 0, \
+            'PARAM.medium.beta must be a nonnegative scalar.'
+        return self
+
+
+class XdcrParams:
+    """Transducer geometry and properties (PARAM.xdcr)."""
+    def __init__(self):
+        self.fc = None
+        self.pitch = None
+        self.width = None
+        self.kerf = None
+        self.bandwidth = None
+        self.radius = None
+        self.focus = None
+        self.height = None
+        self.nelements = None
+        self.baffle = None
+        self.elements = None  # 2-row (x,y) array of element centers, for matrix arrays
+
+    def check(self):
+        if self.fc is not None:
+            assert isnumeric(self.fc) and np.isscalar(self.fc) and self.fc > 0, \
+                'The center frequency (PARAM.xdcr.fc) must be positive.'
+
+        if self.nelements is not None:
+            assert isnumeric(self.nelements) and np.isscalar(self.nelements) and self.nelements > 0 \
+                and self.nelements == round(self.nelements), \
+                'The number of elements (PARAM.xdcr.nelements) is invalid.'
+
+        if self.bandwidth is None:
+            self.bandwidth = 75
+        assert isnumeric(self.bandwidth) and np.isscalar(self.bandwidth) and 0 < self.bandwidth < 200, \
+            'The fractional bandwidth (PARAM.xdcr.bandwidth) must be in ]0,200[.'
+
+        if self.focus is None:
+            self.focus = np.inf
+        assert isnumeric(self.focus) and np.isscalar(self.focus) and self.focus > 0, \
+            'The elevation focus (PARAM.xdcr.focus) must be positive.'
+
+        if self.height is None:
+            self.height = np.inf
+        assert isnumeric(self.height) and np.isscalar(self.height) and self.height > 0, \
+            'The element height (PARAM.xdcr.height) must be positive.'
+
+        if self.radius is None:
+            self.radius = np.inf
+        assert isnumeric(self.radius) and np.isscalar(self.radius) and self.radius > 0, \
+            'The radius of curvature (PARAM.xdcr.radius) must be positive.'
+
+        if self.baffle is None:
+            self.baffle = 'soft'
+        if isinstance(self.baffle, str):
+            assert self.baffle.lower() in ('rigid', 'soft'), \
+                "The baffle (PARAM.xdcr.baffle) must be 'rigid' or 'soft'."
+        else:
+            assert isnumeric(self.baffle) and np.isscalar(self.baffle) and self.baffle > 0, \
+                'The baffle scalar (PARAM.xdcr.baffle) must be positive.'
+
+        # Pitch, width, and kerf must be mutually consistent (pitch = width + kerf)
+        if self.pitch is not None:
+            assert isnumeric(self.pitch) and np.isscalar(self.pitch) and self.pitch > 0, \
+                'The pitch (PARAM.xdcr.pitch) must be positive.'
+            if self.width is not None and self.kerf is not None:
+                tol = 10 * eps() * max(abs(self.pitch), abs(self.width), abs(self.kerf), 1.0)
+                assert abs(self.pitch - self.width - self.kerf) <= tol, \
+                    'PARAM.xdcr.pitch must equal width + kerf.'
+            elif self.kerf is not None:
+                width = self.pitch - self.kerf
+                assert width > 0, 'PARAM.xdcr.pitch must be greater than PARAM.xdcr.kerf.'
+                self.width = width
+            elif self.width is not None:
+                kerf = self.pitch - self.width
+                assert kerf >= 0, 'PARAM.xdcr.pitch must be greater than or equal to PARAM.xdcr.width.'
+                self.kerf = kerf
+        elif self.width is not None and self.kerf is not None:
+            self.pitch = self.kerf + self.width
+
+        if self.kerf is not None:
+            assert isnumeric(self.kerf) and np.isscalar(self.kerf) and self.kerf >= 0, \
+                'The kerf width (PARAM.xdcr.kerf) must be nonnegative.'
+        if self.width is not None:
+            assert isnumeric(self.width) and np.isscalar(self.width) and self.width > 0, \
+                'The element width (PARAM.xdcr.width) must be positive.'
+
+        # Coordinates of the transducer elements (for matrix arrays)
+        if self.elements is not None:
+            elements = np.asarray(self.elements)
+            assert elements.ndim == 2 and elements.shape[0] == 2 and elements.shape[1] > 0, \
+                ('PARAM.xdcr.elements must be a nonempty two-row numeric array containing '
+                 'the x- and y-coordinates.')
+            nElementsFromCoordinates = elements.shape[1]
+            if self.nelements is not None:
+                assert self.nelements == nElementsFromCoordinates, \
+                    'PARAM.xdcr.nelements must equal the number of columns in PARAM.xdcr.elements.'
+            else:
+                self.nelements = nElementsFromCoordinates
+        return self
+
+
+class TxParams:
+    """Transmit properties (PARAM.tx)."""
+    def __init__(self):
+        self.fe = None            # excitation frequency (Hz), default = xdcr.fc
+        self.now = None           # number of wavelengths, default 1
+        self.freqsweep = None     # linear chirp bandwidth (Hz); None = windowed sine
+        self.apodization = None   # transmit apodization, default ones(nelements)
+        self.delay = None         # transmit delays (s)
+        self.passive = None       # passive (receive-only) imaging flag, default False
+        self.prf = None           # pulse repetition frequency (Hz)
+        self.prp = None           # pulse repetition period (s) = 1/prf
+
+    def check(self, xdcr: 'XdcrParams'):
+        if xdcr.fc is not None and self.fe is None:
+            self.fe = xdcr.fc
+        if self.fe is not None:
+            assert isnumeric(self.fe) and np.isscalar(self.fe) and self.fe > 0, \
+                'The excitation frequency (PARAM.tx.fe) must be positive.'
+            if xdcr.fc is not None:
+                assert abs(self.fe - xdcr.fc) < (xdcr.fc * xdcr.bandwidth / 200), \
+                    "The excitation frequency (PARAM.tx.fe) is outside the transducer's bandwidth."
+
+        if self.now is None:
+            self.now = 1
+        assert np.isscalar(self.now) and isnumeric(self.now) and self.now > 0, \
+            'PARAM.tx.now must be a positive scalar.'
+
+        if self.freqsweep is not None:
+            assert np.isscalar(self.freqsweep) and isnumeric(self.freqsweep) and self.freqsweep > 0, \
+                'PARAM.tx.freqsweep must be None (windowed sine) or a positive scalar (linear chirp).'
+
+        if xdcr.nelements is not None and self.apodization is None:
+            self.apodization = np.ones(xdcr.nelements)
+        if self.apodization is not None:
+            apod = np.asarray(self.apodization)
+            assert apod.ndim == 1 and isnumeric(apod), 'PARAM.tx.apodization must be a numeric vector.'
+            if xdcr.nelements is not None:
+                assert apod.size == xdcr.nelements, \
+                    'PARAM.tx.apodization must have length = (number of elements).'
+
+        if self.delay is not None:
+            delay = np.asarray(self.delay)
+            assert delay.ndim <= 2 and isnumeric(delay), \
+                'PARAM.tx.delay must be a numeric vector or matrix.'
+            if xdcr.nelements is not None:
+                assert delay.shape[-1] == xdcr.nelements, \
+                    'PARAM.tx.delay must be a row vector or a matrix whose columns correspond to elements.'
+
+        if self.passive is None:
+            self.passive = False
+        assert isinstance(self.passive, (bool, np.bool_)) or (isnumeric(self.passive) and self.passive in (0, 1)), \
+            'PARAM.tx.passive must be True, False, 0, or 1.'
+        self.passive = bool(self.passive)
+
+        if self.prf is not None:
+            assert isnumeric(self.prf) and np.isscalar(self.prf) and np.isfinite(self.prf) and self.prf > 0, \
+                'PARAM.tx.prf must be a positive scalar.'
+        if self.prp is not None:
+            assert isnumeric(self.prp) and np.isscalar(self.prp) and np.isfinite(self.prp) and self.prp > 0, \
+                'PARAM.tx.prp must be a positive scalar.'
+        if self.prf is not None and self.prp is not None:
+            tol = 10 * eps() * max(abs(self.prf), abs(1 / self.prp), 1.0)
+            assert abs(self.prf - 1 / self.prp) <= tol, 'PARAM.tx.prf must equal 1/PARAM.tx.prp.'
+        elif self.prp is not None:
+            self.prf = 1 / self.prp
+        return self
+
+
+class RxParams:
+    """Receive properties (PARAM.rx)."""
+    def __init__(self):
+        self.fs = None            # sampling frequency (Hz), default = 4*xdcr.fc
+        self.fnumber = None       # f-number for dynamic aperture, default 0 (all elements)
+        self.delay = None         # receive delays (s), default zeros(nelements)
+        self.angle = None         # receive angle (rad), default 0
+        self.apodization = None   # receive apodization, default 'rectangular'
+        self.t0 = None            # acquisition start time (s), default 0
+
+    def check(self, xdcr: 'XdcrParams'):
+        if xdcr.fc is not None and self.fs is None:
+            self.fs = 4 * xdcr.fc
+        if self.fs is not None:
+            assert isnumeric(self.fs) and np.isscalar(self.fs) and self.fs > 0, \
+                'PARAM.rx.fs must be a positive scalar.'
+
+        if xdcr.nelements is not None and self.delay is None:
+            self.delay = np.zeros(xdcr.nelements)
+        if self.delay is not None:
+            delay = np.asarray(self.delay)
+            assert delay.ndim == 1 and isnumeric(delay), 'PARAM.rx.delay must be a numeric vector.'
+            if xdcr.nelements is not None:
+                assert delay.size == xdcr.nelements, \
+                    'PARAM.rx.delay must have length = (number of elements).'
+
+        if self.angle is None:
+            self.angle = 0
+        assert isnumeric(self.angle) and np.isscalar(self.angle), 'PARAM.rx.angle must be a numeric scalar.'
+
+        if self.fnumber is None:
+            self.fnumber = 0
+        else:
+            assert isnumeric(self.fnumber) and np.isscalar(self.fnumber) and self.fnumber >= 0, \
+                'PARAM.rx.fnumber must be a nonnegative scalar.'
+
+        if self.apodization is None:
+            self.apodization = 'rectangular'
+        else:
+            assert isinstance(self.apodization, str), 'PARAM.rx.apodization must be a string.'
+            assert self.apodization.lower() in \
+                ('rectangular', 'boxcar', 'tukey', 'hann', 'hanning', 'hamming'), \
+                ("PARAM.rx.apodization must be 'rectangular', 'boxcar', 'tukey', 'hann', "
+                 "'hanning', or 'hamming'.")
+
+        if self.t0 is None:
+            self.t0 = 0
+        assert isnumeric(self.t0) and np.isscalar(self.t0) and self.t0 >= 0, \
+            'PARAM.rx.t0 must be a nonnegative scalar.'
+        return self
+
+
 class Param(dotdict):
-    @property 
+    """Transducer/medium/transmit/receive parameters used throughout PyMUST.
+
+    As of this version, PARAM is internally organized into nested sub-objects
+    (mirroring the MUST >=2026 MATLAB structure):
+        param.xdcr    -- transducer geometry (XdcrParams)
+        param.medium  -- acoustic medium properties (MediumParams)
+        param.tx      -- transmit properties (TxParams)
+        param.rx      -- receive properties (RxParams)
+
+    For backward compatibility, every field of the old flat layout (e.g.
+    param.fc, param.Nelements, param.RXdelay, ...) remains available as a
+    deprecated property that reads/writes the corresponding nested field -
+    see _DEPRECATED_ATTRS below. Existing code using the flat names keeps
+    working unchanged; new code should prefer the nested form.
+    """
+
+    # flat (deprecated) name -> (sub-namespace, nested field name)
+    _DEPRECATED_ATTRS = {
+        'c': ('medium', 'c'),
+        'attenuation': ('medium', 'attenuation'),
+        'rho': ('medium', 'rho'),
+        'beta': ('medium', 'beta'),
+
+        'fc': ('xdcr', 'fc'),
+        'f0': ('xdcr', 'fc'),  # alternative alias used in dasmtx/dasmtx3
+        'pitch': ('xdcr', 'pitch'),
+        'width': ('xdcr', 'width'),
+        'kerf': ('xdcr', 'kerf'),
+        'focus': ('xdcr', 'focus'),
+        'height': ('xdcr', 'height'),
+        'radius': ('xdcr', 'radius'),
+        'bandwidth': ('xdcr', 'bandwidth'),
+        'baffle': ('xdcr', 'baffle'),
+        'Nelements': ('xdcr', 'nelements'),
+        'elements': ('xdcr', 'elements'),
+
+        'fe': ('tx', 'fe'),
+        'TXnow': ('tx', 'now'),
+        'TXfreqsweep': ('tx', 'freqsweep'),
+        'TXapodization': ('tx', 'apodization'),
+        'TXdelay': ('tx', 'delay'),
+        'passive': ('tx', 'passive'),
+        'PRF': ('tx', 'prf'),
+        'PRP': ('tx', 'prp'),
+
+        'fs': ('rx', 'fs'),
+        'fnumber': ('rx', 'fnumber'),
+        'RXdelay': ('rx', 'delay'),
+        'RXangle': ('rx', 'angle'),
+        't0': ('rx', 't0'),
+    }
+
+    def __init__(self, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        if not dict.__contains__(self, 'xdcr'):
+            dict.__setitem__(self, 'xdcr', XdcrParams())
+        if not dict.__contains__(self, 'medium'):
+            dict.__setitem__(self, 'medium', MediumParams())
+        if not dict.__contains__(self, 'tx'):
+            dict.__setitem__(self, 'tx', TxParams())
+        if not dict.__contains__(self, 'rx'):
+            dict.__setitem__(self, 'rx', RxParams())
+
+    def __setattr__(self, name, value):
+        # Route through the property descriptor (if any) so that deprecated
+        # flat names correctly land in the nested sub-namespaces, instead of
+        # being blindly written as a dict entry (which dotdict would do).
+        if isinstance(getattr(type(self), name, None), property):
+            object.__setattr__(self, name, value)
+        else:
+            dict.__setitem__(self, name, value)
+
+    def __contains__(self, key):
+        if dict.__contains__(self, key):
+            return True
+        prop = getattr(type(self), key, None)
+        if isinstance(prop, property):
+            return getattr(self, key, None) is not None
+        return False
+
+    def get(self, key, default=None):
+        prop = getattr(type(self), key, None)
+        if isinstance(prop, property):
+            value = getattr(self, key)
+            return default if value is None else value
+        return dict.get(self, key, default)
+
+    @property
     def names(self):
-        names = {'attenuation','baffle','bandwidth','c','fc',
-            'fnumber','focus','fs','height','kerf','movie','Nelements',
-            'passive','pitch','radius','RXangle','RXdelay'
-            'TXapodization','TXfreqsweep','TXnow','t0','width'}
-        return {n.lower(): n for n in names}
-    
+        return {n.lower(): n for n in self._DEPRECATED_ATTRS}
+
+    def check(self):
+        """Validate all sub-structures and fill in their default values
+        (mirrors MATLAB GETPARAM's CheckAndApplyDefaults, split per section)."""
+        self.medium.check()
+        self.xdcr.check()
+        self.tx.check(self.xdcr)
+        self.rx.check(self.xdcr)
+        return self
+
     def getElementPositions(self):
         """
         Returns the position of each piezoelectrical element in the probe.
@@ -110,7 +453,7 @@ class Param(dotdict):
         return xe.reshape((1,-1)), ze.reshape((1,-1)), THe.reshape((1,-1)), h.reshape((1,-1))
     
     def getPulseSpectrumFunction(self, FreqSweep = None):
-        if 'TXnow' not in self:
+        if self.tx.now is None:
             self.TXnow = 1
 
         #-- FREQUENCY SPECTRUM of the transmitted pulse
@@ -144,7 +487,28 @@ class Param(dotdict):
         # square root is thus required when calculating the pressure field:
         probeSpectrum = lambda w: np.sqrt(probeSpectrum_sqr(w))
         return probeSpectrum
-    
+
+
+def _make_deprecated_param_alias(flat_name, subname, nested_name):
+    """Builds a property that forwards param.<flat_name> to param.<subname>.<nested_name>."""
+    def getter(self):
+        warnings.warn(
+            f'param.{flat_name} is deprecated; use param.{subname}.{nested_name} instead.',
+            DeprecationWarning, stacklevel = 2)
+        return getattr(getattr(self, subname), nested_name)
+
+    def setter(self, value):
+        warnings.warn(
+            f'param.{flat_name} is deprecated; use param.{subname}.{nested_name} instead.',
+            DeprecationWarning, stacklevel = 2)
+        setattr(getattr(self, subname), nested_name, value)
+
+    return property(getter, setter)
+
+for _flat_name, (_subname, _nested_name) in Param._DEPRECATED_ATTRS.items():
+    setattr(Param, _flat_name, _make_deprecated_param_alias(_flat_name, _subname, _nested_name))
+del _flat_name, _subname, _nested_name
+
 # To maintain same notation as matlab
 def interp1(y, xNew, kind):
     if kind == 'spline':
