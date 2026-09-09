@@ -56,6 +56,11 @@ class XdcrParams:
         self.baffle = None
         self.elements = None  # 2-row (x,y) array of element centers, for matrix arrays
 
+    @property
+    def non_rigid_baffle(self):
+        """Whether an obliquity factor is needed (baffle is anything but 'rigid')."""
+        return self.baffle != 'rigid'
+
     def check(self):
         if self.fc is not None:
             assert utils.isnumeric(self.fc) and _isscalarlike(self.fc) and self.fc > 0, \
@@ -162,6 +167,10 @@ class TxParams:
             self.now = 1
         assert _isscalarlike(self.now) and utils.isnumeric(self.now) and self.now > 0, \
             'PARAM.tx.now must be a positive scalar.'
+
+        # A frequency sweep (linear chirp) doesn't apply to an infinitely long pulse
+        if np.isinf(self.now):
+            self.freqsweep = None
 
         if self.freqsweep is not None:
             assert _isscalarlike(self.freqsweep) and utils.isnumeric(self.freqsweep) and self.freqsweep > 0, \
