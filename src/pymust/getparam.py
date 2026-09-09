@@ -168,13 +168,14 @@ class TxParams:
                 'PARAM.tx.freqsweep must be None (windowed sine) or a positive scalar (linear chirp).'
 
         if xdcr.nelements is not None and self.apodization is None:
-            self.apodization = np.ones(xdcr.nelements)
+            self.apodization = np.ones((1, xdcr.nelements), dtype=np.float32)
         if self.apodization is not None:
-            apod = np.asarray(self.apodization)
-            assert apod.ndim <= 2 and utils.isnumeric(apod), 'PARAM.tx.apodization must be a numeric vector.'
+            apod = np.atleast_2d(self.apodization)
+            assert apod.ndim == 2 and utils.isnumeric(apod), 'PARAM.tx.apodization must be a numeric vector.'
             if xdcr.nelements is not None:
                 assert apod.size == xdcr.nelements, \
                     'PARAM.tx.apodization must have length = (number of elements).'
+            self.apodization = apod
 
         if self.delay is not None:
             delay = np.asarray(self.delay)
@@ -222,13 +223,14 @@ class RxParams:
                 'PARAM.rx.fs must be a positive scalar.'
 
         if xdcr.nelements is not None and self.delay is None:
-            self.delay = np.zeros(xdcr.nelements)
+            self.delay = np.zeros((1, xdcr.nelements), dtype=np.float32)
         if self.delay is not None:
-            delay = np.asarray(self.delay)
-            assert delay.ndim <= 2 and utils.isnumeric(delay), 'PARAM.rx.delay must be a numeric vector.'
+            delay = np.atleast_2d(self.delay)
+            assert delay.ndim == 2 and utils.isnumeric(delay), 'PARAM.rx.delay must be a numeric vector.'
             if xdcr.nelements is not None:
                 assert delay.size == xdcr.nelements, \
                     'PARAM.rx.delay must have length = (number of elements).'
+            self.delay = delay
 
         if self.angle is None:
             self.angle = 0

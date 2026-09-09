@@ -301,11 +301,6 @@ def pfield_new(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray
         param.tx.freqsweep = None
     FreqSweep = param.tx.freqsweep
 
-    #%-- Transmit apodization: PFIELD needs a (1, NumberOfElements) row vector
-    #%   (param.check() only guarantees the right element count, not this shape)
-    param.tx.apodization = np.atleast_2d(param.tx.apodization).astype(np.float32)
-    assert param.tx.apodization.shape[1]==NumberOfElements, 'PARAM.tx.apodization must be of length = (number of elements)'
-
     #% apodization is 0 where TX delays are NaN:
     idx = np.isnan(delaysTX)
     param.tx.apodization[0, np.any(idx, axis = 0)]= 0
