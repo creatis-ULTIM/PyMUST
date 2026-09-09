@@ -3,7 +3,7 @@ if not interactiveDevelopment:
     from pymust.bmode import bmode
     from pymust.dasmtx import dasmtx
     from pymust.dasmtx3 import dasmtx3
-    from pymust.getparam import getparam
+    from pymust.getparam import getparam, Param
     from pymust.impolgrid import impolgrid
     from pymust.iq2doppler import iq2doppler, getNyquistVelocity
     from pymust.pfield import pfield
