@@ -264,19 +264,13 @@ def pfield_new(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray
     #%---------------------------%
 
     # PFIELD's own requirements/defaults/range-checks for every field of
-    # param.xdcr/medium/tx/rx - including derived values like
-    # xdcr.non_rigid_baffle and the freqsweep/now interaction - are delegated
-    # to the Param class itself (param.check(), plus properties on the
-    # sub-namespaces) rather than re-implemented inline here. What's left
-    # below is genuinely PFIELD-specific: two fields PFIELD (unlike check())
-    # treats as hard requirements rather than optional-with-default, and the
+    # param.xdcr/medium/tx/rx - including which fields are required (e.g.
+    # fc, pitch/width-or-kerf), derived values like xdcr.non_rigid_baffle,
+    # and the freqsweep/now interaction - are delegated to the Param class
+    # itself (param.check(), plus properties on the sub-namespaces) rather
+    # than re-implemented here. All that's left below is the
     # apodization/delaysTX interaction, which needs an argument check() has
     # no access to.
-    assert param.xdcr.fc is not None, 'A center frequency value (PARAM.xdcr.fc) is required.'
-    assert param.xdcr.pitch is not None, 'A pitch value (PARAM.xdcr.pitch) is required.'
-    assert param.xdcr.width is not None or param.xdcr.kerf is not None, \
-        'An element width (PARAM.xdcr.width) or kerf width (PARAM.xdcr.kerf) is required.'
-
     param.check()
 
     fc = param.xdcr.fc # central frequency (Hz)

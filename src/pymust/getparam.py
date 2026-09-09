@@ -62,9 +62,13 @@ class XdcrParams:
         return self.baffle != 'rigid'
 
     def check(self):
-        if self.fc is not None:
-            assert utils.isnumeric(self.fc) and _isscalarlike(self.fc) and self.fc > 0, \
-                'The center frequency (PARAM.xdcr.fc) must be positive.'
+        assert self.fc is not None, 'A center frequency value (PARAM.xdcr.fc) is required.'
+        assert utils.isnumeric(self.fc) and _isscalarlike(self.fc) and self.fc > 0, \
+            'The center frequency (PARAM.xdcr.fc) must be positive.'
+
+        assert self.pitch is not None, 'A pitch value (PARAM.xdcr.pitch) is required.'
+        assert self.width is not None or self.kerf is not None, \
+            'An element width (PARAM.xdcr.width) or kerf width (PARAM.xdcr.kerf) is required.'
 
         if self.nelements is not None:
             assert utils.isnumeric(self.nelements) and _isscalarlike(self.nelements) and self.nelements > 0 \
@@ -100,31 +104,26 @@ class XdcrParams:
             assert utils.isnumeric(self.baffle) and _isscalarlike(self.baffle) and self.baffle > 0, \
                 'The baffle scalar (PARAM.xdcr.baffle) must be positive.'
 
-        # Pitch, width, and kerf must be mutually consistent (pitch = width + kerf)
-        if self.pitch is not None:
-            assert utils.isnumeric(self.pitch) and _isscalarlike(self.pitch) and self.pitch > 0, \
-                'The pitch (PARAM.xdcr.pitch) must be positive.'
-            if self.width is not None and self.kerf is not None:
-                tol = 10 * utils.eps() * max(abs(self.pitch), abs(self.width), abs(self.kerf), 1.0)
-                assert abs(self.pitch - self.width - self.kerf) <= tol, \
-                    'PARAM.xdcr.pitch must equal width + kerf.'
-            elif self.kerf is not None:
-                width = self.pitch - self.kerf
-                assert width > 0, 'PARAM.xdcr.pitch must be greater than PARAM.xdcr.kerf.'
-                self.width = width
-            elif self.width is not None:
-                kerf = self.pitch - self.width
-                assert kerf >= 0, 'PARAM.xdcr.pitch must be greater than or equal to PARAM.xdcr.width.'
-                self.kerf = kerf
-        elif self.width is not None and self.kerf is not None:
-            self.pitch = self.kerf + self.width
+        # Pitch, width, and kerf must be mutually consistent (pitch = width + kerf).
+        # pitch and at least one of width/kerf are guaranteed present by the
+        # requiredness asserts above; the third (if missing) is derived here.
+        assert utils.isnumeric(self.pitch) and _isscalarlike(self.pitch) and self.pitch > 0, \
+            'The pitch (PARAM.xdcr.pitch) must be positive.'
+        if self.width is not None and self.kerf is not None:
+            tol = 10 * utils.eps() * max(abs(self.pitch), abs(self.width), abs(self.kerf), 1.0)
+            assert abs(self.pitch - self.width - self.kerf) <= tol, \
+                'PARAM.xdcr.pitch must equal width + kerf.'
+        elif self.kerf is not None:
+            self.width = self.pitch - self.kerf
+            assert self.width > 0, 'PARAM.xdcr.pitch must be greater than PARAM.xdcr.kerf.'
+        else:
+            self.kerf = self.pitch - self.width
+            assert self.kerf >= 0, 'PARAM.xdcr.pitch must be greater than or equal to PARAM.xdcr.width.'
 
-        if self.kerf is not None:
-            assert utils.isnumeric(self.kerf) and _isscalarlike(self.kerf) and self.kerf >= 0, \
-                'The kerf width (PARAM.xdcr.kerf) must be nonnegative.'
-        if self.width is not None:
-            assert utils.isnumeric(self.width) and _isscalarlike(self.width) and self.width > 0, \
-                'The element width (PARAM.xdcr.width) must be positive.'
+        assert utils.isnumeric(self.kerf) and _isscalarlike(self.kerf) and self.kerf >= 0, \
+            'The kerf width (PARAM.xdcr.kerf) must be nonnegative.'
+        assert utils.isnumeric(self.width) and _isscalarlike(self.width) and self.width > 0, \
+            'The element width (PARAM.xdcr.width) must be positive.'
 
         # Coordinates of the transducer elements (for matrix arrays)
         if self.elements is not None:
