@@ -188,7 +188,7 @@ def sptrack(I: np.ndarray, param: utils.Param) -> tuple[np.ndarray, np.ndarray, 
         j_array =np.arange(0,N-n+1,incj, dtype=int)
         
         # Size of the displacement-field matrix
-        siz = (len(j_array), len(i_array))  # j.shape
+        siz = (len(i_array), len(j_array))
         
         # Window centers
         ic = (2*i_array+m)/2;
@@ -215,7 +215,7 @@ def sptrack(I: np.ndarray, param: utils.Param) -> tuple[np.ndarray, np.ndarray, 
         
         
         #% Hanning window
-        H = np.outer(scipy.signal.windows.hann(n+2)[1:-1], scipy.signal.windows.hann(m+2)[1:-1])
+        H = np.outer(scipy.signal.windows.hann(m+2)[1:-1], scipy.signal.windows.hann(n+2)[1:-1])
         
         
         C = np.zeros(siz); # will contain the correlation coefficients
@@ -227,11 +227,11 @@ def sptrack(I: np.ndarray, param: utils.Param) -> tuple[np.ndarray, np.ndarray, 
                 if pixel_i+di[i,j]>=0 and pixel_j+dj[i,j]>=0 and \
                         pixel_i+di[i,j]+m<M  and pixel_j+dj[i,j]+n<N:
                     
-                    I1w = I[pixel_i:pixel_i+n,\
+                    I1w = I[pixel_i:pixel_i+m,\
                             pixel_j:pixel_j+n,\
                             : -param.iminc]
-                    I2w=I [pixel_i + int(di[i,j]):pixel_i+ int(di[i,j]) +n,\
-                            pixel_j + int(dj[i,j]) : pixel_j +  int(dj[i,j])+m,\
+                    I2w=I [pixel_i + int(di[i,j]):pixel_i+ int(di[i,j]) +m,\
+                            pixel_j + int(dj[i,j]) : pixel_j +  int(dj[i,j])+n,\
                             param.iminc:]
                 else:
                     di[i,j] = np.nan; 
@@ -336,12 +336,14 @@ def sptrack(I: np.ndarray, param: utils.Param) -> tuple[np.ndarray, np.ndarray, 
         dj = dj[1]
 
     
+    j,i = np.meshgrid(jc,ic);
     if utils.isfield(param,'ROI'):
-        j,i = np.meshgrid(jc,ic);
-        ROI = scipy.interpolate.interpn((np.arange(N), np.arange(M)),ROI,(i, j),method ='nearest');
-        di[np.logical_not(ROI)] = np.nan;
-        dj[np.logical_not(ROI)] = np.nan;
-    return dj, di, j, i # Order is swapped to be consistent with Python orientation
+        query = np.stack([i.ravel(), j.ravel()], axis = 1)
+        ROI_at_centers = scipy.interpolate.interpn((np.arange(M), np.arange(N)), ROI, query, method = 'nearest', bounds_error = False, fill_value = False)
+        ROI_at_centers = ROI_at_centers.reshape(i.shape)
+        di[np.logical_not(ROI_at_centers)] = np.nan;
+        dj[np.logical_not(ROI_at_centers)] = np.nan;
+    return di, dj, i, j
 
 def rmnan(x,order):
     # Remove NaNs by inter/extrapolation
