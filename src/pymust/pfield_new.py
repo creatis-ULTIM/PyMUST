@@ -263,113 +263,53 @@ def pfield_new(x: np.ndarray, y: np.ndarray, z: np.ndarray, delaysTX: np.ndarray
     #% Check the PARAM structure %
     #%---------------------------%
 
-    # (no ignoreCaseInFieldNames: that's a flat-name mechanism, irrelevant when
-    # reading the nested sub-namespaces directly)
-
-    #-- 1) Center frequency (in Hz)
+    # PFIELD's own requirements/defaults/range-checks for every field of
+    # param.xdcr/medium/tx/rx are delegated to the Param class itself
+    # (param.check(), which runs XdcrParams/MediumParams/TxParams/RxParams'
+    # own check() methods) rather than re-implemented inline here. What's
+    # left below is genuinely PFIELD-specific: two fields PFIELD (unlike
+    # check()) treats as hard requirements rather than optional-with-default,
+    # and derived logic that needs delaysTX/NumberOfElements, which check()
+    # doesn't have access to.
     assert param.xdcr.fc is not None, 'A center frequency value (PARAM.xdcr.fc) is required.'
+    assert param.xdcr.pitch is not None, 'A pitch value (PARAM.xdcr.pitch) is required.'
+    assert param.xdcr.width is not None or param.xdcr.kerf is not None, \
+        'An element width (PARAM.xdcr.width) or kerf width (PARAM.xdcr.kerf) is required.'
+
+    param.check()
+
     fc = param.xdcr.fc # central frequency (Hz)
-
-    #%-- 2) Pitch (in m)
-    assert param.xdcr.pitch is not None,'A pitch value (PARAM.xdcr.pitch) is required.'
     pitch = param.xdcr.pitch
-
-    #%-- 3) Element width and/or Kerf width (in m)
-    if param.xdcr.width is not None and param.xdcr.kerf is not None:
-        assert np.abs(pitch-param.xdcr.width-param.xdcr.kerf)<utils.eps('single'), 'The pitch must be equal to (kerf width + element width).'
-    elif param.xdcr.kerf is not None:
-        param.xdcr.width = pitch-param.xdcr.kerf
-    elif param.xdcr.width is not None:
-        param.xdcr.kerf = pitch-param.xdcr.width
-    else:
-        raise ValueError('An element width (PARAM.xdcr.width) or kerf width (PARAM.xdcr.kerf) is required.')
     ElementWidth = param.xdcr.width
-
-    #%-- 4) Elevation focus (in m)
-    if param.xdcr.focus is None:
-        param.xdcr.focus = np.inf # default = no elevation focusing
-
     Rf = param.xdcr.focus
-    assert utils.isnumeric(Rf) and np.isscalar(Rf) and Rf>0, 'The element focus must be positive.'
-
-    #%-- 5) Element height (in m)
-    if param.xdcr.height is None:
-        param.xdcr.height = np.inf # default = line array
-
     ElementHeight = param.xdcr.height
-    assert utils.isnumeric(ElementHeight) and np.isscalar(ElementHeight) and ElementHeight>0,'The element height must be positive.'
-
-    #%-- 6) Radius of curvature (in m) - convex array
-    if param.xdcr.radius is None:
-        param.xdcr.radius = np.inf # default = linear array
-
     RadiusOfCurvature = param.xdcr.radius
-    assert utils.isnumeric(RadiusOfCurvature) and np.isscalar(RadiusOfCurvature) and RadiusOfCurvature>0,'The radius of curvature must be positive.'
+    c = param.medium.c  # speed of sound (m/s)
+    alpha_dB = param.medium.attenuation
+    NoW = param.tx.now
 
-    #%-- 7) Fractional bandwidth at -6dB (in %)
-    if param.xdcr.bandwidth is None:
-        param.xdcr.bandwidth = 75
-
-    assert param.xdcr.bandwidth>0 and param.xdcr.bandwidth<200, 'The fractional bandwidth at -6 dB (PARAM.xdcr.bandwidth, in %) must be in ]0,200['
-
-    #%-- 8) Baffle
-    #   An obliquity factor will be used if the baffle is not rigid
-    #%   (default = SOFT baffle)
-    if param.xdcr.baffle is None:
-        param.xdcr.baffle = 'soft' #  default
-
+    #%-- Baffle: an obliquity factor is used if the baffle is not rigid
     if param.xdcr.baffle == 'rigid':
         NonRigidBaffle = False
     elif param.xdcr.baffle == 'soft':
         NonRigidBaffle = True
-    elif np.isscalar(param.xdcr.baffle):
-        assert param.xdcr.baffle>0, 'The "baffle" field scalar must be positive'
+    else: # a positive scalar, already validated by param.check()
         NonRigidBaffle = True
-    else:
-        raise ValueError('The "baffle" field must be "rigid","soft" or a positive scalar')
 
-    #%-- 9) Longitudinal velocity (in m/s)
-    if param.medium.c is None:
-        param.medium.c = 1540 # % default value
+    #%-- TX pulse: frequency sweep for a linear chirp doesn't apply if NoW is infinite
+    if np.isinf(NoW):
+        param.tx.freqsweep = None
+    FreqSweep = param.tx.freqsweep
 
-    c = param.medium.c  # speed of sound (m/s)
-
-    #%-- 10) Attenuation coefficient (in dB/cm/MHz)
-    if param.medium.attenuation is None:  #no attenuation, alpha_dB = 0
-        param.medium.attenuation = 0
-        alpha_dB = 0
-    else:
-        alpha_dB = param.medium.attenuation
-        assert np.isscalar(alpha_dB) and utils.isnumeric(alpha_dB) and alpha_dB>=0, 'PARAM.attenuation must be a nonnegative scalar'
-
-
-    #%-- 11) Transmit apodization (no unit)
-    if param.tx.apodization is None:
-        param.tx.apodization = np.ones((1,NumberOfElements), dtype = np.float32)
-    else:
-        if isinstance(param.tx.apodization, np.ndarray) and len(param.tx.apodization.shape) == 1:
-            param.tx.apodization = param.tx.apodization.reshape((1, -1))
-        assert (len(param.tx.apodization.shape) == 2 and param.tx.apodization.shape[0] == 1) and utils.isnumeric(param.tx.apodization), 'PARAM.tx.apodization must be a vector'
-        assert param.tx.apodization.shape[1]==NumberOfElements, 'PARAM.tx.apodization must be of length = (number of elements)'
+    #%-- Transmit apodization: PFIELD needs a (1, NumberOfElements) row vector
+    #%   (param.check() only guarantees the right element count, not this shape)
+    param.tx.apodization = np.atleast_2d(param.tx.apodization).astype(np.float32)
+    assert param.tx.apodization.shape[1]==NumberOfElements, 'PARAM.tx.apodization must be of length = (number of elements)'
 
     #% apodization is 0 where TX delays are NaN:
     idx = np.isnan(delaysTX)
     param.tx.apodization[0, np.any(idx, axis = 0)]= 0
     delaysTX[idx] = 0
-
-    # 12) TX pulse: Number of wavelengths
-    if param.tx.now is None:
-        param.tx.now = 1
-
-    NoW = param.tx.now
-    assert np.isscalar(NoW) and utils.isnumeric(NoW) and NoW>0, 'PARAM.tx.now must be a positive scalar.'
-
-    #%-- 13) TX pulse: Frequency sweep for a linear chirp
-    if param.tx.freqsweep is None or np.isinf(NoW):
-        param.tx.freqsweep = None
-
-    FreqSweep = param.tx.freqsweep
-    assert FreqSweep is None or (np.isscalar(FreqSweep) and utils.isnumeric(FreqSweep) and FreqSweep>0), 'PARAM.TXfreqsweep must be empty (windowed sine) or a positive scalar (linear chirp).'
 
     #%----------------------------------%
     #% END of Check the PARAM structure %
