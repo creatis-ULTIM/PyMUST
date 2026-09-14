@@ -12,7 +12,7 @@ authors = [
 ]
 description = "Python port of the MUST toolbox for ultrasound signal processing and generation of simulated images"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -23,6 +23,9 @@ dependencies = [
   "scipy",
 ]
 dynamic = ["license", "version"]
+
+[project.optional-dependencies]
+test = ["pytest"]
 
 [project.urls]
 Homepage = "https://www.biomecardio.com/MUST"
